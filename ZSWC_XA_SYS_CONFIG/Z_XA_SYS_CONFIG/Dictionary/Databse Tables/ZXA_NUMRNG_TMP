@@ -1,0 +1,13 @@
+@EndUserText.label : 'TMP number range maintain'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #C
+@AbapCatalog.dataMaintenance : #ALLOWED
+define table zxa_numrng_tmp {
+
+  key client            : abap.clnt not null;
+  key nrtmp             : zxa_nr_tmp not null;
+  last_changed_at       : abp_lastchange_tstmpl;
+  local_last_changed_at : abp_locinst_lastchange_tstmpl;
+
+}

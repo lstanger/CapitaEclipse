@@ -1,0 +1,134 @@
+CLASS zcl_xa_msgraph_util DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    TYPES: ty_email TYPE c LENGTH 241,
+           ty_user TYPE c LENGTH 50,
+           begin of ts_email_user,
+            email type ty_email,
+            user  type ty_user,
+           end of ts_email_user.
+
+   CLASS-METHODS: get_ms_id
+      IMPORTING iv_email TYPE ty_email
+      EXPORTING ev_ms_user    TYPE ty_user.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_MSGRAPH_UTIL IMPLEMENTATION.
+
+
+    METHOD get_ms_id.
+
+    DATA lo_http_destination TYPE REF TO if_http_destination.
+    DATA lo_http_client     TYPE REF TO if_web_http_client.
+    DATA lo_http_response   TYPE REF TO if_web_http_response.
+
+    DATA: lr_data       TYPE REF TO data,
+          lv_mail       TYPE string,
+          lv_ms_user TYPE string.
+
+    FIELD-SYMBOLS:
+      <data>        TYPE data,
+      <field>       TYPE any,
+      <structure>   TYPE any,
+      <field_value> TYPE data,
+      <table>       TYPE ANY TABLE.
+
+    TRY.
+        DATA: lr_cscn TYPE if_com_scenario_factory=>ty_query-cscn_id_range.
+
+        " find CA by scenario
+        lr_cscn = VALUE #( ( sign = 'I' option = 'EQ' low = 'ZCS_SAP_MS_GRAPH' ) ).
+        DATA(lo_factory) = cl_com_arrangement_factory=>create_instance( ).
+        lo_factory->query_ca(
+          EXPORTING
+            is_query           = VALUE #( cscn_id_range = lr_cscn )
+          IMPORTING
+            et_com_arrangement = DATA(lt_ca) ).
+
+        IF lt_ca IS INITIAL.
+          EXIT.
+        ENDIF.
+
+        " take the first one
+        READ TABLE lt_ca INTO DATA(lo_ca) INDEX 1.
+
+        " get destination based to Communication Arrangement
+
+        lo_http_destination = cl_http_destination_provider=>create_by_comm_arrangement(
+        comm_scenario  = 'ZCS_SAP_MS_GRAPH'
+        service_id     = 'ZOS_SAP_MS_GRAPH_REST'
+        comm_system_id = lo_ca->get_comm_system_id( ) ).
+
+        " create HTTP destination by cloud destination
+        " lo_http_destination = cl_http_destination_provider=>create_by_cloud_destination( i_name = 'sap-msazure-graph' i_authn_mode = if_a4c_cp_service=>service_specific ).
+
+
+        " create HTTP client by HTTP destination
+        lo_http_client = cl_web_http_client_manager=>create_by_http_destination( lo_http_destination ).
+
+        " adding header fields
+        lo_http_client->get_http_request( )->set_header_fields( VALUE #( ( name = if_web_http_header=>content_type value = if_web_http_header=>accept_application_json )
+                                                                         ( name = if_web_http_header=>accept       value = if_web_http_header=>accept_application_json ) ) ).
+
+        data(lv_path) = |/v1.0/users?$filter=mail eq '{ iv_email }'|.
+        lo_http_client->get_http_request( )->set_uri_path( i_uri_path = lv_path ).
+        " execute HTTP GET-request and store response
+        lo_http_response = lo_http_client->execute( if_web_http_client=>get ).
+
+        " print response text to console
+        DATA(ls_status) = lo_http_response->get_status( ).
+        DATA(lv_body) = lo_http_response->get_text( ).
+        DATA(lv_userid) = CONV string( '' ).
+        /ui2/cl_json=>deserialize(
+            EXPORTING
+              json         = lv_body
+              pretty_name  = /ui2/cl_json=>pretty_mode-user
+              assoc_arrays = abap_true
+            CHANGING
+              data         = lr_data ).
+
+        IF lr_data IS BOUND.
+
+          ASSIGN lr_data->* TO <data>.
+
+          ASSIGN COMPONENT 'VALUE' OF STRUCTURE <data> TO FIELD-SYMBOL(<results>).
+
+          IF SY-SUBRC EQ 0.
+              ASSIGN <results>->* TO <table>.
+              IF sy-subrc EQ 0 AND <table> IS NOT INITIAL.
+                LOOP AT <table> ASSIGNING <structure>.
+                  ASSIGN COMPONENT 'MAIL' OF STRUCTURE <structure>->* TO <field>.
+                  IF sy-subrc EQ 0.
+                    lr_data = <field>.
+                    ASSIGN lr_data->* TO <field_value>.
+                    lv_mail = <field_value>.
+                  ENDIF.
+
+                  ASSIGN COMPONENT 'ID' OF STRUCTURE <structure>->* TO <field>.
+                  IF sy-subrc EQ 0.
+                    lr_data = <field>.
+                    ASSIGN lr_data->* TO <field_value>.
+                    lv_ms_user = <field_value>.
+                  ENDIF.
+                  EXIT.
+                ENDLOOP.
+              ENDIF.
+          ENDIF.
+        ENDIF.
+
+        ev_ms_user = lv_ms_user.
+
+      CATCH cx_http_dest_provider_error cx_web_http_client_error INTO DATA(lx_error).
+        " display error details
+        DATA(lv_error) = lx_error->get_text( ).
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.

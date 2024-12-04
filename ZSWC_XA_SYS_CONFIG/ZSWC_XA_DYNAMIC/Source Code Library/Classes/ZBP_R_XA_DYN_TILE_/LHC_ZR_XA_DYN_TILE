@@ -1,0 +1,96 @@
+CLASS lhc_ZR_XA_DYN_TILE DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+    DATA: gc_mesg_id TYPE symsgid VALUE 'ZXA_DYNAMIC_TILERESP'.
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR Dyntile RESULT result.
+
+    METHODS validateParam FOR VALIDATE ON SAVE
+      IMPORTING keys FOR Dyntile~validateParam.
+    METHODS getDynamicValues  FOR READ
+      IMPORTING keys FOR FUNCTION Dyntile~getDynamicValues RESULT result.
+    METHODS getDynamicValuesTest FOR READ
+      IMPORTING keys FOR FUNCTION Dyntile~getDynamicValuesTest RESULT result.
+
+ENDCLASS.
+
+CLASS lhc_ZR_XA_DYN_TILE IMPLEMENTATION.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD validateParam.
+    READ ENTITIES OF zr_xa_dyn_tile IN LOCAL MODE
+         ENTITY Dyntile
+         ALL FIELDS WITH CORRESPONDING #( keys )
+         RESULT DATA(lt_params).
+
+
+    LOOP AT lt_params INTO DATA(ls_param).
+
+      IF ls_param-scenario IS INITIAL.
+        failed-dyntile   = VALUE #( BASE failed-dyntile (  %tky = ls_param-%tky ) ).
+        reported-dyntile = VALUE #( BASE reported-dyntile ( %tky = ls_param-%tky
+                                                          %element-scenario = if_abap_behv=>mk-on
+                                                          %msg = new_message(
+                                                          severity = if_abap_behv_message=>severity-error
+                                                          id       = gc_mesg_id
+                                                          number   = 003 )  ) ).
+      ENDIF.
+
+      IF ls_param-Class IS INITIAL.
+        failed-dyntile   = VALUE #( BASE failed-dyntile (  %tky = ls_param-%tky ) ).
+        reported-dyntile  = VALUE #( BASE reported-dyntile ( %tky = ls_param-%tky
+                                                          %element-class = if_abap_behv=>mk-on
+                                                          %msg = new_message(
+                                                          severity = if_abap_behv_message=>severity-error
+                                                          id       = gc_mesg_id
+                                                          number   = 002 )  ) ).
+      ELSE.
+        SELECT SINGLE scenario FROM zr_xa_dyn_tile
+         WHERE scenario = @ls_param-scenario INTO @DATA(lv_parameter).
+
+        IF sy-subrc EQ 0.
+          failed-dyntile   = VALUE #( BASE failed-dyntile (  %tky = ls_param-%tky ) ).
+          reported-dyntile = VALUE #( BASE reported-dyntile ( %tky = ls_param-%tky
+                                                           %element-scenario = if_abap_behv=>mk-on
+                                                           %msg = new_message(
+                                                           severity = if_abap_behv_message=>severity-error
+                                                           id       = gc_mesg_id
+                                                           number   = 001 )  ) ).
+        ENDIF.
+      ENDIF.
+
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+  METHOD getDynamicValues.
+    CHECK keys IS NOT INITIAL.
+    DATA(lv_scenario) = keys[ 1 ]-%key-Scenario.
+
+   "result = VALUE #( ( %key-Scenario = keys[ 1 ]-%key-Scenario %param = VALUE #( number = '13' numberstate = 'Error' ) ) ).
+    TRY.
+        " Get Instance from system helper
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+        DATA: ls_mhours TYPE zxa_sys_dynamic_tile_s.
+
+        CALL FUNCTION 'Z_BE_XA_GET_MISSING_HRS' DESTINATION lv_destination
+          EXPORTING
+            iv_objectid     = lv_scenario
+          IMPORTING
+            es_missinghours = ls_mhours.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+    ENDTRY.
+  ENDMETHOD.
+
+  METHOD getDynamicValuesTest.
+  ENDMETHOD.
+
+ENDCLASS.

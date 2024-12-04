@@ -1,0 +1,250 @@
+CLASS zcl_xa_sys_config_def_impl DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES zif_xa_sys_config .
+    TYPES: BEGIN OF ts_selects_table,
+             single_select TYPE if_rap_query_filter=>tt_name_range_pairs,
+           END OF ts_selects_table.
+
+    TYPES: tt_selects_table TYPE TABLE OF ts_selects_table.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+
+
+    CONSTANTS: gc_onpremise_ns                TYPE string VALUE 'com.capita.xa',
+               gc_onpremise_property          TYPE string VALUE 'destination.sap.onpremise',
+               gc_onpremise_comm_scenario     TYPE string VALUE 'destination.sap.comm.scenario.id',
+               gc_onpremise_outbound_service  TYPE string VALUE 'destination.sap.outbound.service.id',
+               gc_onpremise_use_comm_scenario TYPE string VALUE 'destination.sap.use.comm.scenario'.
+
+    METHODS _get_separated_selects
+      IMPORTING
+                io_node   TYPE REF TO if_rap_query_filter_tree_node
+      EXPORTING et_select TYPE tt_selects_table.
+    METHODS _get_ranges
+      IMPORTING
+        io_node   TYPE if_rap_query_filter_tree_types=>node
+      EXPORTING
+        es_select TYPE if_rap_query_filter=>ty_name_range_pairs.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_SYS_CONFIG_DEF_IMPL IMPLEMENTATION.
+
+
+  METHOD zif_xa_sys_config~get_property_value.
+
+    " Select the property value that has been maintained by the administrator.
+    SELECT SINGLE value
+    FROM zi_xa_sys_config
+    WHERE namespace = @iv_namespace AND
+          name = @iv_property_name
+    INTO @rv_property_value.
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_sys_config~get_sap_onpremise_destination.
+
+    DATA: lr_cscn TYPE if_com_scenario_factory=>ty_query-cscn_id_range.
+
+    " Get flag to see whether communication scenario or cloud destination should be used for connection.
+    DATA(lv_use_comm_scenario) = me->zif_xa_sys_config~get_property_value( iv_namespace = gc_onpremise_ns iv_property_name = gc_onpremise_use_comm_scenario ).
+
+
+    IF lv_use_comm_scenario IS NOT INITIAL.
+
+      " Get Communication Scenario
+      DATA(lv_comm_scenario) = me->zif_xa_sys_config~get_property_value( iv_namespace = gc_onpremise_ns iv_property_name = gc_onpremise_comm_scenario ).
+      " Get out bound service.
+      DATA(lv_outbound_service) = me->zif_xa_sys_config~get_property_value( iv_namespace = gc_onpremise_ns iv_property_name = gc_onpremise_outbound_service ).
+
+      " Find Communication Arrangement by scenario ID
+      lr_cscn = VALUE #( ( sign = 'I' option = 'EQ' low = lv_comm_scenario ) ).
+      DATA(lo_factory) = cl_com_arrangement_factory=>create_instance( ).
+      lo_factory->query_ca( EXPORTING is_query = VALUE #( cscn_id_range = lr_cscn )
+                            IMPORTING et_com_arrangement = DATA(lt_ca) ).
+      IF lt_ca IS INITIAL.
+        EXIT.
+      ENDIF.
+
+      " Take the first one
+      READ TABLE lt_ca INTO DATA(lo_ca) INDEX 1.
+
+      DATA(lo_dest) = cl_rfc_destination_provider=>create_by_comm_arrangement( EXPORTING comm_scenario = CONV #( lv_comm_scenario )
+                                                                                         service_id = CONV #( lv_outbound_service )
+                                                                                         comm_system_id = lo_ca->get_comm_system_id( ) ).
+
+      rv_destination = lo_dest->get_destination_name(  ).
+
+    ELSE.
+
+      " Read Sub account destination directly.
+      DATA(lo_destination) = cl_rfc_destination_provider=>create_by_cloud_destination(
+           i_name = me->zif_xa_sys_config~get_property_value( iv_namespace = gc_onpremise_ns iv_property_name = gc_onpremise_property )
+      ).
+
+      rv_destination = lo_destination->get_destination_name( ).
+
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD ZIF_XA_SYS_CONFIG~GET_SAP_USER.
+    DATA: lv_current_user TYPE string.
+
+    lv_current_user = COND #( when iv_cloud_user IS INITIAL then sy-uname else iv_cloud_user ).
+
+    SELECT SINGLE UserName FROM ZC_XA_BusinessUserLogonDetails WHERE UserId = @lv_current_user INTO @rv_sap_user.
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_sys_config~map_rap_io_request_params.
+
+    TYPES: BEGIN OF ts_combined_filters,
+            single_select type zxa_sys_selopt_t,
+           END OF ts_combined_filters.
+
+    DATA: ls_return_filters           TYPE zxa_sys_selopt_s,
+          lt_separaet_selects_filters TYPE tt_selects_table,
+          lt_combined_filters         TYPE TABLE OF ts_combined_filters.
+
+    CLEAR: ev_search_expression, et_filters, et_sort, et_parameters, et_requested_elements, es_pagination.
+
+    " Set search expression - To avoid security risk via SQL injection, the expression is escape.
+    ev_search_expression = cl_abap_dyn_prg=>escape_quotes( io_request->get_search_expression( ) ).
+
+    TRY.
+        " Get filter as a range.
+        DATA(lt_filters) = io_request->get_filter( )->get_as_ranges( EXPORTING iv_drop_null_comparisons = abap_true ).
+
+*        " Move the field ranges.
+        et_filters = value #( ( single_select = corresponding #( deep lt_filters ) ) ).
+
+      CATCH cx_rap_query_filter_no_range INTO DATA(cx_exception).
+        " Only case we are handling here are 1st level OR's that are non translatable
+        " to ranges, so those needs to be split into separate selects and joined together
+        " Example url: ...&$filter=CompanyCode eq '0015' and ProfitCentre eq 'LPBD'  and Vendor eq '123456' or
+        "                          CompanyCode eq '0002' and ProfitCentre eq 'LPBA' and Vendor eq '123456'
+        DATA(lo_tree) = io_request->get_filter( )->get_as_tree(  ).
+        DATA(lo_root) = lo_tree->get_root_node( ).
+
+        me->_get_separated_selects( EXPORTING io_node = lo_root IMPORTING et_select = DATA(lt_separate_selects) ).
+        loop at lt_separate_selects into data(ls_separate_select).
+          et_filters = value #( base et_filters ( corresponding #( deep ls_separate_select ) ) ).
+        endloop.
+    ENDTRY.
+
+
+
+    DATA(lt_sort) = io_request->get_sort_elements( ).
+
+    " Move the sort elements.
+    et_sort = CORRESPONDING #( lt_sort ).
+
+    DATA(lt_parameters) = io_request->get_parameters( ).
+
+    " Move parameters
+    et_parameters = CORRESPONDING #( lt_parameters ).
+
+    DATA(lt_requested_elements) = io_request->get_requested_elements( ).
+
+    " Move requested elements
+    et_requested_elements = CORRESPONDING #( lt_requested_elements ).
+
+    " Move pagination values, skip and top.
+    es_pagination-skip = io_request->get_paging( )->get_offset( ).
+    DATA(lv_page_size) = io_request->get_paging( )->get_page_size(  ).
+
+    " Set maximum page size to 100, if its less than 100 then keep it otherwise set to 100 so performance isn't affected.
+    es_pagination-top = COND #( WHEN lv_page_size = if_rap_query_paging=>page_size_unlimited THEN 100 ELSE lv_page_size ).
+                           " COND #( WHEN lv_page_size < 100 THEN lv_page_size ELSE 100 ) ).
+
+
+  ENDMETHOD.
+
+
+  METHOD _get_ranges.
+
+    CLEAR: es_select.
+
+    DATA(lt_range_children) = io_node->get_children( ).
+
+    LOOP AT lt_range_children INTO DATA(lo_child).
+      IF lo_child->get_type( ) EQ if_rap_query_filter_tree_types=>node_types-identifier.
+        es_select-name = lo_child->get_value( )->*.
+      ELSEIF lo_child->get_type( ) EQ if_rap_query_filter_tree_types=>node_types-value.
+        es_select-range = VALUE #( ( option = cond #( when io_node->get_type( ) eq if_rap_query_filter_tree_types=>node_types-equals then 'EQ'
+                                                      when io_node->get_type( ) eq if_rap_query_filter_tree_types=>node_types-greater_than then 'GT'
+                                                      when io_node->get_type( ) eq if_rap_query_filter_tree_types=>node_types-less_than then 'LT' ) sign = 'I' low = lo_child->get_value( )->* ) ).
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD _get_separated_selects.
+
+    DATA: lt_separated_selects_filters TYPE STANDARD TABLE OF zcl_xa_sys_config_def_impl=>ts_selects_table,
+          lt_single_select_ranges      TYPE if_rap_query_filter=>tt_name_range_pairs,
+          ls_combined_range            TYPE if_rap_query_filter=>ty_name_range_pairs.
+
+    DATA(lt_children) = io_node->get_children(  ).
+    DATA(lv_type) = io_node->get_type( ).
+    CASE lv_type.
+      WHEN if_rap_query_filter_tree_types=>node_types-logical_and.
+        LOOP AT lt_children INTO DATA(lo_child).
+          " Get children and build and range
+          case lo_child->get_type( ).
+            when if_rap_query_filter_tree_types=>node_types-logical_and.
+                me->_get_separated_selects( EXPORTING io_node = lo_child IMPORTING et_select = DATA(lt_select) ).
+                loop at lt_select into data(ls_select).
+                     APPEND LINES OF ls_select-single_select TO lt_single_select_ranges.
+                endloop.
+
+            when if_rap_query_filter_tree_types=>node_types-logical_or.
+                " Can happen for LE or GE
+                data(lt_combined_range_children) = lo_child->get_children( ).
+                clear: ls_combined_range.
+                loop at lt_combined_range_children into data(lo_combined_range_child).
+                    me->_get_ranges( EXPORTING io_node = lo_combined_range_child IMPORTING es_select = DATA(ls_range) ).
+                    if ls_combined_range is initial.
+                        ls_combined_range = ls_range.
+                    else.
+                        append lines of ls_range-range to ls_combined_range-range.
+                    endif.
+                endloop.
+                lt_single_select_ranges = VALUE #( BASE lt_single_select_ranges ( ls_combined_range ) ).
+            when others.
+                me->_get_ranges( EXPORTING io_node = lo_child IMPORTING es_select = ls_range ).
+                lt_single_select_ranges = VALUE #( BASE lt_single_select_ranges ( ls_range ) ).
+          endcase.
+        ENDLOOP.
+
+        et_select = VALUE #( ( single_select = lt_single_select_ranges ) ).
+      WHEN if_rap_query_filter_tree_types=>node_types-logical_or.
+        " loop at lt_sub_children into data(lo_or_child).
+        LOOP AT lt_children INTO lo_child.
+          " Get children and build and range
+          me->_get_separated_selects( EXPORTING io_node = lo_child IMPORTING et_select = lt_select ).
+          APPEND LINES OF lt_select TO lt_separated_selects_filters.
+        ENDLOOP.
+        et_select = lt_separated_selects_filters.
+      WHEN OTHERS.
+        " For LE and GE
+        me->_get_ranges( EXPORTING io_node = io_node IMPORTING es_select = ls_range ).
+        et_select = VALUE #( ( single_select = VALUE #( BASE lt_single_select_ranges ( ls_range ) ) ) ).
+    ENDCASE.
+
+  ENDMETHOD.
+ENDCLASS.

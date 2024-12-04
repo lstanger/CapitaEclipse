@@ -1,0 +1,35 @@
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Business User Logon Details'
+@Metadata.ignorePropagatedAnnotations: true 
+@ObjectModel.supportedCapabilities: [#CDS_MODELING_ASSOCIATION_TARGET, #CDS_MODELING_DATA_SOURCE]
+@ObjectModel.usageType:{
+  serviceQuality: #X,
+  sizeCategory: #S,
+  dataClass: #MIXED
+}
+
+define view entity ZC_XA_BusinessUserLogonDetails
+  as select from I_IAMBusinessUserLogonDetails
+ 
+{
+  key UserID,
+      UserName,
+      UserGroup,
+      UserValidFrom,
+      UserValidTo,
+      UserIsLocked,
+      UserLockStatus,
+      UserLogonLanguage,
+      UserDecimalFormat,
+      UserDateFormat,
+      UserTimeFormat,
+      UserLocalTimeZone,
+      UserLastLogonDate,
+      UserLastLogonTime,
+      LastChangedByUser,
+      LastChangedDate,
+      LastChangedTime,
+      _BusinessUser,
+      _Language,
+      _TimeZone
+}

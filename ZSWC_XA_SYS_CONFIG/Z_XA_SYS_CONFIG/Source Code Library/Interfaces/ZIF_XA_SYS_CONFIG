@@ -1,0 +1,32 @@
+INTERFACE zif_xa_sys_config
+  PUBLIC.
+      METHODS get_property_value
+        IMPORTING
+          iv_namespace      TYPE string
+          iv_property_name  TYPE string
+        RETURNING
+          VALUE(rv_property_value) TYPE string.
+
+      METHODS get_sap_onpremise_destination
+        RETURNING
+          VALUE(rv_destination) TYPE rfcdest
+        RAISING
+           CX_RFC_DEST_PROVIDER_ERROR .
+
+      METHODS map_rap_io_request_params
+        IMPORTING
+            io_request TYPE REF TO if_rap_query_request
+        EXPORTING
+            ev_search_expression TYPE string
+            et_filters TYPE zxa_sys_selopt_t
+            et_sort TYPE zxa_sys_sorting_t
+            et_parameters TYPE zxa_sys_parameters_t
+            et_requested_elements TYPE zxa_sys_requested_elements_t
+            es_pagination TYPE zxa_sys_pagination_s.
+
+      METHODS get_sap_user
+        IMPORTING iv_cloud_user TYPE string OPTIONAL
+        RETURNING
+            VALUE(rv_sap_user) TYPE string.
+
+ENDINTERFACE.

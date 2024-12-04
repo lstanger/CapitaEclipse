@@ -1,0 +1,86 @@
+CLASS zxa_sys_rap_provider_exception DEFINITION
+  PUBLIC
+  INHERITING FROM CX_RAP_QUERY_PROVIDER
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_t100_message .
+
+    CONSTANTS:
+
+        BEGIN OF rfc_sytem_failure,
+          msgid TYPE symsgid VALUE 'ZXA_SYS_MESSAGES',
+          msgno TYPE symsgno VALUE '001',
+          attr1 TYPE scx_attrname VALUE 'RFC_NAME',
+          attr2 TYPE scx_attrname VALUE '',
+          attr3 TYPE scx_attrname VALUE '',
+          attr4 TYPE scx_attrname VALUE '',
+        END OF rfc_sytem_failure,
+
+        BEGIN OF rfc_communication_failure,
+          msgid TYPE symsgid VALUE 'ZXA_SYS_MESSAGES',
+          msgno TYPE symsgno VALUE '002',
+          attr1 TYPE scx_attrname VALUE 'RFC_NAME',
+          attr2 TYPE scx_attrname VALUE '',
+          attr3 TYPE scx_attrname VALUE '',
+          attr4 TYPE scx_attrname VALUE '',
+        END OF rfc_communication_failure,
+
+        BEGIN OF rfc_unknown_failure,
+          msgid TYPE symsgid VALUE 'ZXA_SYS_MESSAGES',
+          msgno TYPE symsgno VALUE '003',
+          attr1 TYPE scx_attrname VALUE 'RFC_NAME',
+          attr2 TYPE scx_attrname VALUE '',
+          attr3 TYPE scx_attrname VALUE '',
+          attr4 TYPE scx_attrname VALUE '',
+        END OF rfc_unknown_failure,
+
+        BEGIN OF destination_provider_error,
+          msgid TYPE symsgid VALUE 'ZXA_SYS_MESSAGES',
+          msgno TYPE symsgno VALUE '004',
+          attr1 TYPE scx_attrname VALUE 'DESTINATION_NAME',
+          attr2 TYPE scx_attrname VALUE '',
+          attr3 TYPE scx_attrname VALUE '',
+          attr4 TYPE scx_attrname VALUE '',
+        END OF destination_provider_error.
+
+    DATA: rfc_name         TYPE string,
+          destination_name TYPE string.
+
+    METHODS constructor
+      IMPORTING
+        !textid   LIKE if_t100_message=>t100key OPTIONAL
+        !previous LIKE previous OPTIONAL
+        rfc_name  TYPE string OPTIONAL
+        destination_name TYPE string OPTIONAL.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+
+
+ENDCLASS.
+
+
+
+CLASS ZXA_SYS_RAP_PROVIDER_EXCEPTION IMPLEMENTATION.
+
+
+  METHOD constructor ##ADT_SUPPRESS_GENERATION.
+    CALL METHOD super->constructor
+      EXPORTING
+        previous = previous.
+    CLEAR me->textid.
+
+    me->rfc_name = rfc_name.
+    me->destination_name = destination_name.
+
+    IF textid IS INITIAL.
+      if_t100_message~t100key = if_t100_message=>default_textid.
+    ELSE.
+      if_t100_message~t100key = textid.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

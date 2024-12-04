@@ -1,0 +1,20 @@
+@EndUserText.label: 'Dynamic Tile-Response Values'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_DYNAMIC'
+@Search.searchable: true
+define custom entity ZCE_XA_DYNAMIC_TILE
+{ 
+   @Search.defaultSearchElement: true
+   key Title        : abap.char(40);
+   key Num          : abap.char(40);
+       InfoState    : abap.char(40);
+       Icon         : abap.char(40);
+       Info         : abap.char(40);
+       numberDigits : abap.char(40);
+       numberFactor : abap.char(40);
+       NumberState  : abap.char(40);
+       NumberUnit   : abap.char(40);
+       Subtitle     : abap.char(40);
+       StateArrow   : abap.char(40);
+       TargetParams : abap.char(40);
+       targetURL    : abap.char(40);
+}

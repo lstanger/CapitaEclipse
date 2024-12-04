@@ -1,0 +1,24 @@
+INTERFACE zif_xa_rfc PUBLIC.
+
+  DATA: gr_sys_helper               TYPE REF TO zif_xa_sys_config,
+        gv_destination              TYPE rfcdest,
+        gv_destination_rfc_name     TYPE string,
+        gv_rfc_structure_name       TYPE string,
+        gv_custom_entity_name       TYPE string.
+
+
+  METHODS select_from_rap_query_provider
+    IMPORTING
+              io_request  TYPE REF TO if_rap_query_request
+              io_response TYPE REF TO if_rap_query_response
+    RAISING   cx_rap_query_prov_not_impl
+              cx_rap_query_provider.
+
+  METHODS select_direct
+    IMPORTING it_filters            TYPE zxa_sys_selopt_t
+              it_requested_elements TYPE zxa_sys_requested_elements_t OPTIONAL
+    EXPORTING et_data TYPE STANDARD TABLE
+    RAISING   cx_rap_query_prov_not_impl
+              cx_rap_query_provider.
+
+ENDINTERFACE.

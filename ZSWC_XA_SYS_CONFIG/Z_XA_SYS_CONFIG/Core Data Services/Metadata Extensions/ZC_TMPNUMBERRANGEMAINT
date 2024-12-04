@@ -1,0 +1,34 @@
+@Metadata.layer: #CUSTOMER
+@UI: {
+  headerInfo: {
+    typeName: 'TmpNumberRangeMaint', 
+    typeNamePlural: 'TmpNumberRangeMaints', 
+    title: {
+      type: #STANDARD, 
+      label: 'TMP number range maintain', 
+      value: 'Nrtmp'
+    }
+  }
+}
+annotate view ZC_TmpNumberRangeMaint with
+{
+  @UI.identification: [ {
+    position: 1 
+  } ]
+  @UI.lineItem: [ {
+    position: 1 
+  } ]
+  @UI.facet: [ {
+    id: 'ZI_TmpNumberRangeMaint', 
+    purpose: #STANDARD, 
+    type: #IDENTIFICATION_REFERENCE, 
+    label: 'TMP number range maintain', 
+    position: 1 
+  } ]
+  Nrtmp;
+  
+  @UI.identification: [ {
+    position: 2 
+  } ]
+  LastChangedAt;
+}

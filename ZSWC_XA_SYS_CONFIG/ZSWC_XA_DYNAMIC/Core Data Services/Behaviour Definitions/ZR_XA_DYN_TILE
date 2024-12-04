@@ -1,0 +1,24 @@
+managed implementation in class zbp_r_xa_dyn_tile unique;
+strict ( 2 );
+
+define behavior for ZR_XA_DYN_TILE alias Dyntile
+persistent table zxa_dyntile_scen
+lock master
+authorization master ( instance )
+//etag master <field_name>
+{
+  create;
+  update;
+  delete;
+
+  field ( mandatory:create, readonly:update ) Scenario;
+  field ( mandatory ) Class;
+
+  function getDynamicValues parameter zxa_dyn_tile_scenario_s result[1] zxa_sys_dynamic_tile_s;
+
+
+  static function getDynamicValuesTest parameter zxa_dyn_tile_scenario_s result[1] zxa_sys_dynamic_tile_s;
+
+  validation validateParam on save { field Scenario, Class; create; update; } // Validate if class exists and if scenario is not duplicated
+  // when creating
+}

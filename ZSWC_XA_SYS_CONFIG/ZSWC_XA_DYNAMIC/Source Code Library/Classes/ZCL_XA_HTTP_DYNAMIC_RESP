@@ -1,0 +1,47 @@
+CLASS zcl_xa_http_dynamic_resp DEFINITION
+  PUBLIC
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_http_service_extension .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_HTTP_DYNAMIC_RESP IMPLEMENTATION.
+
+
+  METHOD if_http_service_extension~handle_request.
+
+    DATA(lt_param) = request->get_form_fields(  ).
+
+    DATA(lv_text) = request->get_text( ).
+
+    READ TABLE lt_param REFERENCE INTO DATA(lr_param) WITH KEY name = 'scenario'.
+    IF sy-subrc = 0.
+      " response->set_text('Scenario Testing').
+      DATA(lo_impl_class) = zcl_ce_xa_dynamic=>get_instance( lr_param->value ).
+
+      DATA(ls_resp)  = lo_impl_class->get_dynamic_response( lr_param->value ).
+
+      DATA(ls_obj_str) = /ui2/cl_json=>serialize( data = ls_resp compress = abap_true
+                    pretty_name = /ui2/cl_json=>pretty_mode-camel_case ).
+
+      " ls_obj_str =  `{ "d": {` && ls_obj_str &&  `}`.
+
+      "ls_obj_str = '{"number":"11","numberState":"Positive"}'.
+      response->set_text( ls_obj_str ).
+      response->set_content_type( 'application/json' ).
+
+
+
+    ENDIF.
+
+
+
+
+  ENDMETHOD.
+ENDCLASS.

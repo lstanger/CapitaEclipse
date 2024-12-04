@@ -1,0 +1,19 @@
+INTERFACE zif_xa_dynamic_tile
+  PUBLIC.
+
+   DATA:gv_scenario TYPE string,
+        gv_obj_key  TYPE string.
+
+*  METHODS get_scenario_implclass
+*        IMPORTING
+*           iv_scenario   TYPE string
+*        EXPORTING
+*          ev_impl_class TYPE string.
+
+  METHODS get_dynamic_response
+        IMPORTING
+           iv_scenario TYPE string
+           iv_obj_key  TYPE string OPTIONAL
+        RETURNING
+        VALUE(es_dynamic_tile) TYPE zxa_sys_dynamic_tile_s.
+ENDINTERFACE.

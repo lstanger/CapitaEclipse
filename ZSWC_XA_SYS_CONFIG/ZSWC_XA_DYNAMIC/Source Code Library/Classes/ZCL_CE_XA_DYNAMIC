@@ -1,0 +1,42 @@
+CLASS zcl_ce_xa_dynamic DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PRIVATE.
+
+  PUBLIC SECTION.
+    CLASS-METHODS:
+      get_instance
+        IMPORTING
+          iv_scenario       TYPE string
+        RETURNING
+          VALUE(ro_dynamic) TYPE REF TO zif_xa_dynamic_tile.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_dynamic TYPE REF TO zif_xa_dynamic_tile.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_DYNAMIC IMPLEMENTATION.
+
+
+  METHOD get_instance.
+    IF go_dynamic IS INITIAL.
+
+*& Select Implementation Class based on Scenario
+      DATA: lv_impl_class TYPE string.
+      SELECT SINGLE class
+      FROM zxa_dyntile_scen
+      WHERE scenario = @iv_scenario
+       INTO @lv_impl_class.
+      IF sy-subrc = 0.
+        CREATE OBJECT go_dynamic TYPE (lv_impl_class).
+      ENDIF.
+    ENDIF.
+
+    ro_dynamic = go_dynamic.
+
+  ENDMETHOD.
+ENDCLASS.

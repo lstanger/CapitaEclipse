@@ -1,0 +1,14 @@
+@EndUserText.label: 'Consumption: System Configuration App'
+@AccessControl.authorizationCheck: #CHECK
+@Metadata.allowExtensions: true
+define root view entity ZC_XA_SYS_CONFIG provider contract transactional_query as projection on ZI_XA_SYS_CONFIG
+{
+  key Namespace,
+  key Name,
+      Value,
+      CreatedBy,
+      CreatedAt,
+      ChangedBy,          
+      LastChangedAt,
+      LocalLastChangedAt
+}

@@ -1,0 +1,15 @@
+@EndUserText.label: 'TMP number range maintain - Maintain'
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@Metadata.allowExtensions: true
+define view entity ZC_TmpNumberRangeMaint
+  as projection on ZI_TmpNumberRangeMaint
+{
+  key Nrtmp,
+  LastChangedAt,
+  @Consumption.hidden: true
+  LocalLastChangedAt,
+  @Consumption.hidden: true
+  SingletonID,
+  _TmpNumberRangeMaAll : redirected to parent ZC_TmpNumberRangeMaint_S
+  
+}

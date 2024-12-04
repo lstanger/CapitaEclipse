@@ -1,0 +1,15 @@
+@EndUserText.label : 'ZI_TmpNumberRangeMaint_S - Draft'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zxa_numrng_t_d_s {
+
+  key client         : mandt not null;
+  key singletonid    : abap.int1 not null;
+  transportrequestid : sxco_transport;
+  hidetransport      : abap_boolean;
+  lastchangedatmax   : abp_lastchange_tstmpl;
+  "%admin"           : include sych_bdl_draft_admin_inc;
+
+}

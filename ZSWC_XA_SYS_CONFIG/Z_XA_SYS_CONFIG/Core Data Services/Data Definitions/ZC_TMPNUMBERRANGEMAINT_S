@@ -1,0 +1,15 @@
+@EndUserText.label: 'TMP number range maintain Singleton - Ma'
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@Metadata.allowExtensions: true
+@ObjectModel.semanticKey: [ 'SingletonID' ]
+define root view entity ZC_TmpNumberRangeMaint_S
+  provider contract transactional_query
+  as projection on ZI_TmpNumberRangeMaint_S
+{
+  key SingletonID,
+  LastChangedAtMax,
+  TransportRequestID,
+  HideTransport,
+  _TmpNumberRangeMaint : redirected to composition child ZC_TmpNumberRangeMaint
+  
+}

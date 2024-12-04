@@ -1,0 +1,15 @@
+@EndUserText.label: 'TMP number range maintain'
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+define view entity ZI_TmpNumberRangeMaint
+  as select from ZXA_NUMRNG_TMP
+  association to parent ZI_TmpNumberRangeMaint_S as _TmpNumberRangeMaAll on $projection.SingletonID = _TmpNumberRangeMaAll.SingletonID
+{
+  key NRTMP as Nrtmp,
+  @Semantics.systemDateTime.lastChangedAt: true
+  LAST_CHANGED_AT as LastChangedAt,
+  @Semantics.systemDateTime.localInstanceLastChangedAt: true
+  LOCAL_LAST_CHANGED_AT as LocalLastChangedAt,
+  1 as SingletonID,
+  _TmpNumberRangeMaAll
+  
+}

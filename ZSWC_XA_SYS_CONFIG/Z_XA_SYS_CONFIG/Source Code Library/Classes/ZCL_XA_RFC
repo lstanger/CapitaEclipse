@@ -1,0 +1,223 @@
+CLASS zcl_xa_rfc DEFINITION
+  PUBLIC
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error.
+    INTERFACES zif_xa_rfc .
+  PROTECTED SECTION.
+    METHODS: map_rap_io_request_params IMPORTING io_request            TYPE REF TO if_rap_query_request
+                                       EXPORTING ev_search_expression  TYPE string
+                                                 et_filters            TYPE zxa_sys_selopt_t
+                                                 et_sort               TYPE zxa_sys_sorting_t
+                                                 et_parameters         TYPE zxa_sys_parameters_t
+                                                 et_requested_elements TYPE zxa_sys_requested_elements_t
+                                                 es_pagination         TYPE zxa_sys_pagination_s,
+      call_rfc   IMPORTING iv_search_expression  TYPE string OPTIONAL
+                           it_filters            TYPE zxa_sys_selopt_t OPTIONAL
+                           it_sort               TYPE zxa_sys_sorting_t OPTIONAL
+                           it_parameters         TYPE zxa_sys_parameters_t OPTIONAL
+                           it_requested_elements TYPE zxa_sys_requested_elements_t OPTIONAL
+                           is_pagination         TYPE zxa_sys_pagination_s OPTIONAL
+                 EXPORTING ev_total_num_records  TYPE i
+                           et_data               TYPE STANDARD TABLE
+                           ev_subrc              TYPE i
+                 RAISING   cx_rap_query_prov_not_impl
+                           cx_rap_query_provider,
+      map_rfc_data IMPORTING it_rfc_data TYPE STANDARD TABLE
+                   EXPORTING et_ce_data  TYPE STANDARD TABLE.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_RFC IMPLEMENTATION.
+
+
+  METHOD call_rfc.
+
+    DATA lmsg TYPE char100.
+
+    TRY.
+        CALL FUNCTION zif_xa_rfc~gv_destination_rfc_name DESTINATION zif_xa_rfc~gv_destination
+          EXPORTING
+            iv_search_expression  = iv_search_expression
+            it_filters            = it_filters
+            it_sort               = it_sort
+            it_parameters         = it_parameters
+            it_requested_elements = it_requested_elements
+            is_pagination         = is_pagination
+          IMPORTING
+            ev_total_num_records  = ev_total_num_records
+          TABLES
+            et_data      = et_data
+          EXCEPTIONS
+            system_failure        = 1 MESSAGE lmsg
+            communication_failure = 2 MESSAGE lmsg
+            OTHERS                = 99.
+
+        ev_subrc = sy-subrc.
+
+        CASE ev_subrc.
+          WHEN 0.
+            RETURN.
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = zif_xa_rfc~gv_destination_rfc_name.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = zif_xa_rfc~gv_destination_rfc_name.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = zif_xa_rfc~gv_destination_rfc_name.
+        ENDCASE.
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD constructor.
+
+    " Get the system helper object
+    zif_xa_rfc~gr_sys_helper = zcl_xa_sys_helper=>get_instance(  ).
+
+
+    " Get the ECC on-premise destination
+    zif_xa_rfc~gv_destination = zif_xa_rfc~gr_sys_helper->get_sap_onpremise_destination(  ).
+
+  ENDMETHOD.
+
+
+  METHOD map_rap_io_request_params.
+
+    zif_xa_rfc~gr_sys_helper->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                         IMPORTING es_pagination = es_pagination
+                                                                   et_filters = et_filters
+                                                                   et_parameters = et_parameters
+                                                                   et_requested_elements = et_requested_elements
+                                                                   et_sort = et_sort
+                                                                   ev_search_expression = ev_search_expression ).
+  ENDMETHOD.
+
+
+  METHOD map_rfc_data.
+
+     LOOP AT it_rfc_data ASSIGNING FIELD-SYMBOL(<fs_rfc_data_line>).
+       APPEND INITIAL LINE TO et_ce_data ASSIGNING FIELD-SYMBOL(<fs_custom_entity_data_line>).
+       MOVE-CORRESPONDING <fs_rfc_data_line> TO <fs_custom_entity_data_line>.
+     ENDLOOP.
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_rfc~select_direct.
+
+    DATA: lr_rfc_data           TYPE REF TO data,
+          lr_custom_entity_data TYPE REF TO data,
+          lr_structure_descr    TYPE REF TO cl_abap_structdescr,
+          lt_requested_elements TYPE zxa_sys_requested_elements_t.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    IF it_requested_elements IS INITIAL.
+       lr_structure_descr ?= cl_abap_structdescr=>describe_by_name( zif_xa_rfc~gv_rfc_structure_name ).
+
+       LOOP AT lr_structure_descr->components ASSIGNING FIELD-SYMBOL(<fs_component>).
+         lt_requested_elements = VALUE #( BASE lt_requested_elements ( CONV string( <fs_component>-name ) ) ).
+       ENDLOOP.
+
+    ELSE.
+        lt_requested_elements[] = it_requested_elements[].
+    ENDIF.
+
+
+    CREATE DATA: lr_rfc_data TYPE TABLE OF (zif_xa_rfc~gv_rfc_structure_name).
+    ASSIGN lr_rfc_data->* TO <fs_rfc_data>.
+
+    me->call_rfc( EXPORTING it_filters = it_filters
+                            it_requested_elements = lt_requested_elements
+                  IMPORTING ev_subrc = DATA(lv_subrc)
+                            ev_total_num_records = DATA(lv_number_of_records)
+                            et_data = <fs_rfc_data> ).
+
+    IF <fs_rfc_data> IS NOT INITIAL.
+        CREATE DATA: lr_custom_entity_data TYPE TABLE OF (zif_xa_rfc~gv_custom_entity_name).
+        ASSIGN lr_custom_entity_data->* TO <fs_custom_entity_data>.
+
+        me->map_rfc_data( EXPORTING it_rfc_data = <fs_rfc_data>
+                          IMPORTING et_ce_data = <fs_custom_entity_data> ).
+
+        et_data[] = <fs_custom_entity_data>[].
+    ENDIF.
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_rfc~select_from_rap_query_provider.
+
+    DATA: lr_rfc_data           TYPE REF TO data,
+          lr_custom_entity_data TYPE REF TO data.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+*
+    " Map the OData request parameters to the FM importing/table objects
+    me->map_rap_io_request_params( EXPORTING io_request = io_request
+                                   IMPORTING es_pagination = DATA(ls_pagination)
+                                             et_filters = DATA(lt_filter)
+                                             et_parameters = DATA(lt_parameters)
+                                             et_requested_elements = DATA(lt_requested_elements)
+                                             et_sort = DATA(lt_sort)
+                                             ev_search_expression = DATA(lv_search_expression) ).
+
+    CREATE DATA: lr_rfc_data TYPE TABLE OF (zif_xa_rfc~gv_rfc_structure_name).
+    ASSIGN lr_rfc_data->* TO <fs_rfc_data>.
+
+    " Call RFC function module
+    me->call_rfc( EXPORTING is_pagination = ls_pagination
+                            it_filters = lt_filter
+                            it_parameters = lt_parameters
+                            it_requested_elements = lt_requested_elements
+                            it_sort = lt_sort
+                            iv_search_expression = lv_search_expression
+                  IMPORTING ev_subrc = DATA(lv_subrc)
+                            ev_total_num_records = DATA(lv_number_of_records)
+                            et_data = <fs_rfc_data> ).
+
+    IF lv_subrc EQ 0.
+      IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+        io_response->set_total_number_of_records( CONV int8( lv_number_of_records ) ).
+      ENDIF.
+
+      IF io_request->is_data_requested(  ).
+
+        CREATE DATA: lr_custom_entity_data TYPE TABLE OF (zif_xa_rfc~gv_custom_entity_name).
+        ASSIGN lr_custom_entity_data->* TO <fs_custom_entity_data>.
+
+        me->map_rfc_data( EXPORTING it_rfc_data = <fs_rfc_data>
+                          IMPORTING et_ce_data = <fs_custom_entity_data> ).
+
+        io_response->set_data( <fs_custom_entity_data> ).
+
+      ENDIF.
+
+    ENDIF.
+
+
+  ENDMETHOD.
+ENDCLASS.

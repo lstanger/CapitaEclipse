@@ -1,0 +1,37 @@
+managed implementation in class zbp_i_xa_sys_config unique;
+strict;
+with draft;
+
+define behavior for ZI_XA_SYS_CONFIG alias SystemConfiguration
+persistent table ZXA_SYS_CONFIG
+draft table ZXA_SYS_CONFIG_D
+lock master
+total etag LastChangedAt
+authorization master ( instance )
+etag master LocalLastChangedAt
+{
+
+  field ( mandatory:create) Name, Namespace, Value;
+
+  field ( readonly ) CreatedAt, CreatedBy, LastChangedAt, LocalLastChangedAt, ChangedBy;
+
+  field ( readonly:update ) Name, Namespace;
+
+  mapping for ZXA_SYS_CONFIG corresponding {
+    LastChangedAt = last_changed_at;
+    LocalLastChangedAt = local_last_changed_at;
+    CreatedBy = created_by;
+    CreatedAt = created_at;
+    ChangedBy = changed_by;
+  }
+
+  draft action Resume;
+  draft action Edit;
+  draft action Activate;
+  draft action Discard;
+  draft determine action Prepare;
+
+  create;
+  update;
+  delete;
+}

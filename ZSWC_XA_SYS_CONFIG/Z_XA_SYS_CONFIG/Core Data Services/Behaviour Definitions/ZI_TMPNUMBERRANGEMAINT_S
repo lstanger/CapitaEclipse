@@ -1,0 +1,63 @@
+managed with additional save implementation in class ZBP_I_TMPNUMBERRANGEMAINT_S unique;
+strict;
+with draft;
+
+define behavior for ZI_TmpNumberRangeMaint_S alias TmpNumberRangeMaAll
+draft table ZXA_NUMRNG_T_D_S
+with unmanaged save
+lock master total etag LastChangedAtMax
+authorization master( global )
+
+{
+  field ( readonly )
+   SingletonID;
+
+
+  update;
+  internal create;
+  internal delete;
+
+  draft action ( features : instance ) Edit;
+  draft action Activate;
+  draft action Discard;
+  draft action Resume;
+  draft determine action Prepare;
+  action ( features : instance ) SelectCustomizingTransptReq parameter D_SelectCustomizingTransptReqP result [1] $self;
+
+  association _TmpNumberRangeMaint { create ( features : instance ); with draft; }
+}
+
+define behavior for ZI_TmpNumberRangeMaint alias TmpNumberRangeMaint
+persistent table ZXA_NUMRNG_TMP
+draft table ZXA_NUMRNG_TMP_D
+etag master LocalLastChangedAt
+lock dependent by _TmpNumberRangeMaAll
+authorization dependent by _TmpNumberRangeMaAll
+
+{
+  field ( mandatory : create )
+   Nrtmp;
+
+  field ( readonly )
+   SingletonID,
+   LastChangedAt,
+   LocalLastChangedAt;
+
+  field ( readonly : update )
+   Nrtmp;
+
+
+  update( features : global );
+  delete( features : global );
+
+  mapping for ZXA_NUMRNG_TMP
+  {
+    Nrtmp = NRTMP;
+    LastChangedAt = LAST_CHANGED_AT;
+    LocalLastChangedAt = LOCAL_LAST_CHANGED_AT;
+  }
+
+  association _TmpNumberRangeMaAll { with draft; }
+
+  validation ValidateTransportRequest on save ##NOT_ASSIGNED_TO_DETACT { create; update; delete; }
+}

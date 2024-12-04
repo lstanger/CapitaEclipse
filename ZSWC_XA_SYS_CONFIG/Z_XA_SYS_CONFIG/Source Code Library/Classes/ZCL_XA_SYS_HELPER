@@ -1,0 +1,31 @@
+CLASS zcl_xa_sys_helper DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PRIVATE .
+
+  PUBLIC SECTION.
+
+    CLASS-METHODS:
+      get_instance
+        RETURNING
+          VALUE(ro_helper) TYPE REF TO zif_xa_sys_config.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_helper TYPE REF TO zif_xa_sys_config.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_SYS_HELPER IMPLEMENTATION.
+
+
+  METHOD get_instance.
+    IF go_helper IS INITIAL.
+       CREATE OBJECT go_helper TYPE zcl_xa_sys_config_def_impl.
+    ENDIF.
+
+    ro_helper = go_helper.
+
+  ENDMETHOD.
+ENDCLASS.

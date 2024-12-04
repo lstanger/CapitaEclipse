@@ -1,0 +1,18 @@
+@EndUserText.label: 'Interface View: System Configuration'
+@AccessControl.authorizationCheck: #CHECK
+define root view entity ZI_XA_SYS_CONFIG as select from zxa_sys_config
+{
+  key namespace             as Namespace,
+  key name                  as Name,
+      value                 as Value,   
+      @Semantics.user.createdBy: true
+      created_by            as CreatedBy,
+      @Semantics.systemDateTime.createdAt: true
+      created_at            as CreatedAt,
+      @Semantics.user.lastChangedBy: true 
+      changed_by            as ChangedBy,   
+      @Semantics.systemDateTime.lastChangedAt: true 
+      last_changed_at       as LastChangedAt,
+      @Semantics.systemDateTime.localInstanceLastChangedAt: true  
+      local_last_changed_at as LocalLastChangedAt
+}
