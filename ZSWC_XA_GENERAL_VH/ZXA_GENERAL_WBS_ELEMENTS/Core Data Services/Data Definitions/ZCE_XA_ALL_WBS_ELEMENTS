@@ -1,0 +1,105 @@
+@EndUserText.label: 'Custom Entity for WBS Elements'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_WBS_ELEMENTS'
+@Search.searchable: true
+define custom entity ZCE_XA_ALL_WBS_ELEMENTS {
+
+  @UI.facet:[{
+    id: 'WBSElements',
+    purpose: #STANDARD,
+    type: #IDENTIFICATION_REFERENCE,
+    label: 'Information',
+    position: 10
+  }]  
+  
+  @UI : {
+    identification: [{position: 10}],
+    selectionField: [{position: 10}],
+    lineItem: [{position: 10, importance: #HIGH }]
+    
+  } 
+    
+  @Search.defaultSearchElement: true    
+  @ObjectModel.text.element: ['WBSElementDesc']  
+  key WBSElement : zxa_wbs_element; 
+  
+   @UI : {
+    identification: [{position: 20}],
+    selectionField: [{position: 20}],
+    lineItem: [{position: 20, importance: #HIGH }]
+    
+  } 
+  
+  @Search.defaultSearchElement: true 
+  @EndUserText.label: 'Description' 
+  @Semantics.text: true      
+  WBSElementDesc    : abap.char( 40 );
+  
+   @UI : {
+    identification: [{position: 30}],
+    selectionField: [{position: 30}],
+    lineItem: [{position: 30, importance: #HIGH }]
+    
+  }   
+  
+  @Search.defaultSearchElement: true
+  @EndUserText.label: 'WBS Element ID' 
+  @Consumption.filter.hidden: true  
+  @UI.hidden : true    
+  WBSElementId : abap.char(16);
+  
+   @UI : {
+    identification: [{position: 40}],
+    selectionField: [{position: 40}],
+    lineItem: [{position: 40, importance: #HIGH }]
+    
+  }   
+  
+  @Search.defaultSearchElement: true 
+  @Consumption.valueHelpDefinition: [{
+                entity        : {   name: 'ZCE_XA_AllCompanyCodes',
+                            element: 'CompanyCode' }}]
+  @ObjectModel.foreignKey.association: '_CompanyCode'  
+  CompanyCode : bukrs;
+
+   @UI : {
+    identification: [{position: 50}],
+    selectionField: [{position: 50}],
+    lineItem: [{position: 50, importance: #HIGH }]
+    
+  }   
+  
+  @Search.defaultSearchElement: true  
+  @EndUserText.label: 'Profit Centre' 
+  @Consumption.valueHelpDefinition: [{
+                entity        : {   name: 'ZCE_XA_PROFIT_CENTRE',
+                            element: 'ProfitCentre' }}]
+  @ObjectModel.foreignKey.association: '_ProfitCentre'    
+  profitCenter : prctr;    
+  
+ 
+  @Consumption.filter.hidden: true
+  @EndUserText.label: 'Object Number' 
+  @UI.hidden : true  
+  ObjectNo : abap.char(22);  
+  
+   @UI : {
+    identification: [{position: 35}],
+    selectionField: [{position: 35}],
+    lineItem: [{position: 35, importance: #HIGH }]
+    
+  }     
+  @Search.defaultSearchElement: true    
+  @EndUserText.label: 'Project' 
+  ProjectNo : abap.char(24); 
+
+  @ObjectModel.sort.enabled: false
+  @ObjectModel.filter.enabled: false
+  @Consumption.filter.hidden: true
+  _CompanyCode            : association [0..1] to ZCE_XA_CompanyCode on _CompanyCode.CompanyCode = $projection.CompanyCode;
+
+  @ObjectModel.sort.enabled: false
+  @ObjectModel.filter.enabled: false
+  @Consumption.filter.hidden: true
+  _ProfitCentre            : association [0..1] to ZCE_XA_Profit_Centre on _ProfitCentre.ProfitCentre = $projection.profitCenter;   
+    
+}

@@ -1,0 +1,143 @@
+CLASS zcl_xa_wbs_elements_rfc DEFINITION
+   PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error,
+             check_wbs_element_active IMPORTING iv_wbs_element TYPE zxa_wbs_element
+                           RETURNING VALUE(rv_wbs_element_active) TYPE abap_boolean
+                           RAISING   cx_rap_query_prov_not_impl
+                                     cx_rap_query_provider,
+             zif_xa_rfc~select_from_rap_query_provider REDEFINITION.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_WBS_ELEMENTS_RFC IMPLEMENTATION.
+
+
+    METHOD check_wbs_element_active.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   TYPE STANDARD TABLE OF ZXA_GENERAL_WBS_ELEMENT_BAPI_S,
+          ls_data   TYPE STANDARD TABLE OF ZXA_GENERAL_WBS_ELEMENT_BAPI_S.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_wbs_element IS NOT INITIAL.
+
+    TRY.
+
+        me->zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_WBS_ELEMENTS'.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'WBSELEMENT' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_wbs_element ) ) )
+                                            ( name = 'ISOPEN' range = VALUE #( ( sign = 'I' option = 'EQ' low = 'X' ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        rv_wbs_element_active = abap_false.
+        IF lt_data IS NOT INITIAL.
+            if lt_data[ 1 ]-wbselement eq iv_wbs_element.
+                rv_wbs_element_active = abap_true.
+            endif.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_GET_WBS_ELEMENTS'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_GENERAL_WBS_ELEMENT_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_ALL_WBS_ELEMENTS'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_rfc~select_from_rap_query_provider.
+
+    DATA: lr_rfc_data           TYPE REF TO data,
+          lr_custom_entity_data TYPE REF TO data,
+          lt_isact_filter   TYPE zxa_sys_selopt_rng_t.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+*
+    " Map the OData request parameters to the FM importing/table objects
+    me->map_rap_io_request_params( EXPORTING io_request = io_request
+                                   IMPORTING es_pagination = DATA(ls_pagination)
+                                             et_filters = DATA(lt_filter)
+                                             et_parameters = DATA(lt_parameters)
+                                             et_requested_elements = DATA(lt_requested_elements)
+                                             et_sort = DATA(lt_sort)
+                                             ev_search_expression = DATA(lv_search_expression) ).
+
+    me->zif_xa_rfc~gv_custom_entity_name = io_request->get_entity_id( ).
+
+    if io_request->get_entity_id( ) eq 'ZCE_XA_WBS_ELEMENTS'.
+            " Add active flag filter
+             LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_bapi_filter>).
+               CLEAR: lt_isact_filter[].
+               lt_isact_filter = VALUE #( ( name = 'ISOPEN' range = VALUE #( ( sign = 'I' option = 'EQ' low = abap_true ) ) ) ).
+               APPEND LINES OF lt_isact_filter TO <fs_bapi_filter>-single_select.
+             ENDLOOP.
+
+             " If the filter is blank, then add the documenttype = ZBTP..
+             IF lt_filter IS INITIAL.
+               lt_isact_filter = VALUE #( ( name = 'ISOPEN' range = VALUE #( ( sign = 'I' option = 'EQ' low = abap_true ) ) ) ).
+               APPEND INITIAL LINE TO lt_filter ASSIGNING <fs_bapi_filter>.
+               APPEND LINES OF lt_isact_filter TO <fs_bapi_filter>-single_select.
+            ENDIF.
+        endif.
+
+
+    CREATE DATA: lr_rfc_data TYPE TABLE OF (zif_xa_rfc~gv_rfc_structure_name).
+    ASSIGN lr_rfc_data->* TO <fs_rfc_data>.
+
+    " Call RFC function module
+    me->call_rfc( EXPORTING is_pagination = ls_pagination
+                            it_filters = lt_filter
+                            it_parameters = lt_parameters
+                            it_requested_elements = lt_requested_elements
+                            it_sort = lt_sort
+                            iv_search_expression = lv_search_expression
+                  IMPORTING ev_subrc = DATA(lv_subrc)
+                            ev_total_num_records = DATA(lv_number_of_records)
+                            et_data = <fs_rfc_data> ).
+
+    IF lv_subrc EQ 0.
+      IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+        io_response->set_total_number_of_records( CONV int8( lv_number_of_records ) ).
+      ENDIF.
+
+      IF io_request->is_data_requested(  ).
+
+        CREATE DATA: lr_custom_entity_data TYPE TABLE OF (zif_xa_rfc~gv_custom_entity_name).
+        ASSIGN lr_custom_entity_data->* TO <fs_custom_entity_data>.
+
+        me->map_rfc_data( EXPORTING it_rfc_data = <fs_rfc_data>
+                          IMPORTING et_ce_data = <fs_custom_entity_data> ).
+
+        io_response->set_data( <fs_custom_entity_data> ).
+
+      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.

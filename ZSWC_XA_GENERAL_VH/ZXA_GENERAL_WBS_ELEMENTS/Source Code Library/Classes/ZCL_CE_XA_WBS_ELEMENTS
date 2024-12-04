@@ -1,0 +1,127 @@
+CLASS zcl_ce_xa_wbs_elements DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_WBS_ELEMENTS IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    TRY.
+        NEW zcl_xa_wbs_elements_rfc(  )->zif_xa_rfc~select_from_rap_query_provider( EXPORTING io_request = io_request io_response = io_response ).
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+*    DATA: lv_number_of_records TYPE i,
+*          lv_records_int8      TYPE int8,
+*          lt_wbselements       TYPE zxa_general_wbs_element_bapi_t,
+*          lt_isact_filter      TYPE zxa_sys_selopt_rng_t,
+*          lt_wbs_elements_ce   TYPE STANDARD TABLE OF zce_xa_wbs_elements.
+*
+*    TRY.
+*
+*        " Get Instance from system helper
+*        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+*
+*        " Get the ECC on-premise destination
+*        DATA(lv_destination_new) = lo_instance->get_sap_onpremise_destination(  ).
+*
+*        " Map the OData request parameters to the FM importing/table objects
+*        lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+*                                                IMPORTING es_pagination = DATA(ls_pagination)
+*                                                          et_filters = DATA(lt_filter)
+*                                                          et_parameters = DATA(lt_parameters)
+*                                                          et_requested_elements = DATA(lt_requested_elements)
+*                                                          et_sort = DATA(lt_sort)
+*                                                          ev_search_expression = DATA(lv_search_expression) ).
+*
+*        if io_request->get_entity_id( ) eq 'ZCE_XA_WBS_ELEMENTS'.
+*            " Add active flag filter
+*             LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_bapi_filter>).
+*               CLEAR: lt_isact_filter[].
+*               lt_isact_filter = VALUE #( ( name = 'ISOPEN' range = VALUE #( ( sign = 'I' option = 'EQ' low = abap_true ) ) ) ).
+*               APPEND LINES OF lt_isact_filter TO <fs_bapi_filter>-single_select.
+*             ENDLOOP.
+*
+*             " If the filter is blank, then add the documenttype = ZBTP..
+*             IF lt_filter IS INITIAL.
+*               lt_isact_filter = VALUE #( ( name = 'ISOPEN' range = VALUE #( ( sign = 'I' option = 'EQ' low = abap_true ) ) ) ).
+*               APPEND INITIAL LINE TO lt_filter ASSIGNING <fs_bapi_filter>.
+*               APPEND LINES OF lt_isact_filter TO <fs_bapi_filter>-single_select.
+*            ENDIF.
+*        endif.
+*
+*        " Call RFC function module to get WBS Elements
+*        CALL FUNCTION 'Z_BE_XA_GET_WBS_ELEMENTS' DESTINATION lv_destination_new
+*          EXPORTING
+*            iv_search_expression  = lv_search_expression
+*            it_filters            = lt_filter
+*            it_sort               = lt_sort
+*            it_parameters         = lt_parameters
+*            it_requested_elements = lt_requested_elements
+*            is_pagination         = ls_pagination
+*          IMPORTING
+*            ev_total_num_records  = lv_number_of_records
+*          TABLES
+*            et_wbselements        = lt_wbselements
+*          EXCEPTIONS
+*            system_failure        = 1
+*            communication_failure = 2
+*            OTHERS                = 99.
+*        CASE sy-subrc.
+*          WHEN 0.
+*            IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+*              io_response->set_total_number_of_records( CONV int8( lv_number_of_records ) ).
+*            ENDIF.
+*
+*            IF io_request->is_data_requested(  ).
+*              LOOP AT lt_wbselements INTO DATA(ls_wbselements).
+*                lt_wbs_elements_ce = VALUE #( BASE lt_wbs_elements_ce ( CORRESPONDING #( ls_wbselements ) ) ).
+*              ENDLOOP.
+*              io_response->set_data( lt_wbselements ).
+*            ENDIF.
+*
+*          WHEN 1.
+*            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*              EXPORTING
+*                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+*                rfc_name = 'Z_BE_XA_GET_WBS_ELEMENTS'.
+*          WHEN 2.
+*            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*              EXPORTING
+*                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+*                rfc_name = 'Z_BE_XA_GET_WBS_ELEMENTS'.
+*          WHEN 99.
+*            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*              EXPORTING
+*                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+*                rfc_name = 'Z_BE_XA_GET_WBS_ELEMENTS'.
+*        ENDCASE.
+*
+*      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+*
+*        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*          EXPORTING
+*            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+*            previous = lx_dest.
+*
+*    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.
