@@ -1,0 +1,7 @@
+@EndUserText.label: 'Company Codes'
+define service ZSD_XA_Company_Code {
+  expose ZCE_XA_CompanyCode as CompanyCodes;
+  expose ZCE_XA_COST_CENTRE as CostCentres;
+  expose ZCE_XA_Employee as Employees;
+  expose ZCE_XA_Supplier as Suppliers;
+}

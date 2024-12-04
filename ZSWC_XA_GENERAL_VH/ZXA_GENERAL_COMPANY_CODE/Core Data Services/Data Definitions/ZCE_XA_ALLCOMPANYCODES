@@ -1,0 +1,26 @@
+@EndUserText.label: 'Company codes'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_COMPANYCODE'
+
+define custom entity ZCE_XA_AllCompanyCodes {
+    @ObjectModel.text.element: ['CompanyCodeName']
+    @Semantics.organization: { role: true, unit: true }
+    key CompanyCode: bukrs;
+    @Semantics.text: true
+    @EndUserText.label: 'Description'
+    @Semantics.name: { givenName: true, fullName: true }   
+    CompanyCodeName: abap.char( 25 );
+    @Semantics.address : { city: true }
+    City: zxa_city;
+    @Semantics.address : { zipCode: true }
+    PostCode: zxa_post_code;
+    @Semantics.address : { street: true  }
+    Street: zxa_street;
+    Currency: waers;
+    @Semantics.address : { country: true }
+    CountryKey: land1;
+    @EndUserText.label: 'IsClosed'
+    @UI.hidden: true
+    IsClosed: abap.char( 1 );
+
+
+}

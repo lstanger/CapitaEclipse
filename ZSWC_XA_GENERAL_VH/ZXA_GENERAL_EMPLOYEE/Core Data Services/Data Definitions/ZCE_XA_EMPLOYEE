@@ -1,0 +1,20 @@
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_EMPLOYEE'
+@EndUserText.label: 'Employees'
+@Search.searchable: true
+define custom entity ZCE_XA_Employee {
+    @ObjectModel.text.element: ['FullName']
+    @Search.defaultSearchElement: true
+    key EmployeeNumber: zxa_employee_number;
+    @ObjectModel.text.element: ['FullName']
+    @Search.defaultSearchElement: true
+    UserID: zxa_user_id;
+    @Semantics.text: true
+    @Search.defaultSearchElement: true
+//    @UI.hidden : true   
+    FullName: zxa_employee_fullname; 
+    Email: zxa_email;
+    @EndUserText.label: 'Cost Centre'
+    CostCentre: kostl;
+    CompanyCode: bukrs;
+    //BussinessArea: zxa_employee_business_area;
+}

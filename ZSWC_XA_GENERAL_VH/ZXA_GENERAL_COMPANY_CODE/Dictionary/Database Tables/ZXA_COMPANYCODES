@@ -1,0 +1,12 @@
+@EndUserText.label : 'Company codes'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zxa_companycodes {
+
+  key client      : abap.clnt not null;
+  key companycode : bukrs not null;
+  companycodename : abap.char(40);
+
+}

@@ -1,0 +1,91 @@
+@EndUserText.label: 'Custom Entity for Cost Centre'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_COST_CENTRE'
+@Search.searchable: true
+define custom entity ZCE_XA_COST_CENTRE
+{
+
+      @UI.facet       : [{
+        id            : 'CostCentre',
+        purpose       : #STANDARD,
+        type          : #IDENTIFICATION_REFERENCE,
+        label         : 'Information',
+        position      : 10
+      }]
+
+      @UI             : {
+        identification: [{position: 10}],
+        selectionField: [{position: 10}],
+        lineItem      : [{position: 10, importance: #HIGH }]
+
+      }
+  key ControllingArea : kokrs;
+
+      @UI             : {
+        identification: [{position: 20}],
+        selectionField: [{position: 20}],
+        lineItem      : [{position: 20, importance: #HIGH }]
+
+      }
+      @Search.defaultSearchElement: true
+      @ObjectModel.text.element: ['CostCentreName']
+      @Semantics.organization: { role: true, unit: true }
+  key CostCentre      : kostl;
+
+      @UI             : {
+        identification: [{position: 60}],
+        selectionField: [{position: 60}],
+        lineItem      : [{position: 60, importance: #HIGH }]
+
+      }
+      @EndUserText.label: 'Valid Until'
+  key ValidToDate     : abap.dats;
+
+      @UI             : {
+        identification: [{position: 30}],
+        selectionField: [{position: 30}],
+        lineItem      : [{position: 30, importance: #HIGH }]
+
+      }
+      @EndUserText.label: 'Cost Centre Name'
+      @Search.defaultSearchElement: true
+      @Semantics.text : true
+      @Semantics.name: { givenName: true, fullName: true }   
+      CostCentreName  : abap.char( 20 );
+
+      @UI             : {
+        identification: [{position: 40}],
+        selectionField: [{position: 40}],
+        lineItem      : [{position: 40, importance: #HIGH }]
+
+      }
+      @EndUserText.label: 'Cost Centre Description'
+      @Search.defaultSearchElement: true
+      CostCentreDesc  : abap.char( 40 );
+
+      @UI             : {
+        identification: [{position: 50}],
+        selectionField: [{position: 50}],
+        lineItem      : [{position: 50, importance: #HIGH }]
+
+      }
+      @Search.defaultSearchElement: true
+      @ObjectModel.foreignKey.association: '_CompanyCode'
+      @Consumption.valueHelpDefinition: [{ entity        : {   name: 'ZCE_XA_CompanyCode', element: 'CompanyCode' }}]
+
+      CompanyCode     : bukrs;
+
+      @UI             : {
+        identification: [{position: 60}],
+        selectionField: [{position: 60}],
+        lineItem      : [{position: 60, importance: #HIGH }]
+
+      }
+      ProfitCentre    : prctr;
+
+      @Consumption.filter.hidden: true
+      @ObjectModel.filter.enabled: false
+      @ObjectModel.sort.enabled: false
+      _CompanyCode    : association [0..1] to ZCE_XA_AllCompanyCodes on _CompanyCode.CompanyCode = ZCE_XA_COST_CENTRE.CompanyCode;
+
+
+}

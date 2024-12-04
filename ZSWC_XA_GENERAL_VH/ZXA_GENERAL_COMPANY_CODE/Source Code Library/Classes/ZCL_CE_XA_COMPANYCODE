@@ -1,0 +1,83 @@
+CLASS zcl_ce_xa_companycode DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_rap_query_provider.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_COMPANYCODE IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+*    DATA: lv_number_of_records TYPE i,
+*          lv_records_int8      TYPE int8,
+*          lt_companycodes      TYPE zxa_general_company_cod_bapi_t,
+*          lt_isclosed_filter   TYPE zxa_sys_selopt_rng_t.
+*    TRY.
+** Get destination object from subaccount.
+*        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance( ).
+*        DATA(lv_destination) = lo_instance->get_sap_onpremise_destination( ).
+*        lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+*        IMPORTING es_pagination = DATA(ls_pagination)
+*        et_filters = DATA(lt_filter)
+*        et_parameters = DATA(lt_parameters)
+*        et_requested_elements = DATA(lt_requested_elements)
+*        et_sort = DATA(lt_sort)
+*        ev_search_expression = DATA(lv_search_expression) ).
+*        IF io_request->get_entity_id( ) EQ 'ZCE_XA_COMPANYCODE'.
+*          LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_bapi_filter>).
+*            CLEAR: lt_isclosed_filter[].
+*            lt_isclosed_filter = VALUE #( ( name = 'ISCLOSED' range = VALUE #( ( sign = 'I' option = 'NE' low = 'X' ) ) ) ).
+*            APPEND LINES OF lt_isclosed_filter TO <fs_bapi_filter>-single_select.
+*          ENDLOOP.
+*          " If the filter is blank, then add the documenttype = ZBTP..
+*          IF lt_filter IS INITIAL.
+*            lt_isclosed_filter = VALUE #( ( name = 'ISCLOSED' range = VALUE #( ( sign = 'I' option = 'NE' low = 'X' ) ) ) ).
+*            APPEND INITIAL LINE TO lt_filter ASSIGNING <fs_bapi_filter>.
+*            APPEND LINES OF lt_isclosed_filter TO <fs_bapi_filter>-single_select.
+*          ENDIF.
+*        ENDIF.
+*        " Call RFC function module to get cost centres
+*        CALL FUNCTION 'Z_BE_XA_GET_COMPANY_CODES' DESTINATION lv_destination
+*          EXPORTING
+*            iv_search_expression  = lv_search_expression
+*            it_filters            = lt_filter
+*            it_sort               = lt_sort
+*            it_parameters         = lt_parameters
+*            it_requested_elements = lt_requested_elements
+*            is_pagination         = ls_pagination
+*          IMPORTING
+*            ev_total_num_records  = lv_number_of_records
+*          TABLES
+*            et_data               = lt_companycodes.
+*        lv_records_int8 = lv_number_of_records.
+*        io_response->set_total_number_of_records( lv_records_int8 ).
+*        IF io_request->is_data_requested( ).
+*          io_response->set_data( lt_companycodes ).
+*        ENDIF.
+*      CATCH cx_root INTO DATA(lx_root).
+*    ENDTRY.
+
+
+
+    TRY.
+        NEW zcl_xa_companycode_rfc(  )->zif_xa_rfc~select_from_rap_query_provider( EXPORTING io_request = io_request io_response = io_response ).
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.

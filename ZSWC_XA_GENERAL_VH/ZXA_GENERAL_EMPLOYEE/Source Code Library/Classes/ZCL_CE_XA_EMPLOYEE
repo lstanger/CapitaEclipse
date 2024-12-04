@@ -1,0 +1,60 @@
+CLASS zcl_ce_xa_employee DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+   INTERFACES if_rap_query_provider.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_EMPLOYEE IMPLEMENTATION.
+
+
+METHOD if_rap_query_provider~select.
+
+    DATA: lv_number_of_records TYPE i,
+          lv_records_int8      TYPE int8,
+          lt_employees         TYPE zxa_general_employee_bapi_t.
+
+*    IF io_request->is_data_requested( ).
+
+      TRY.
+
+*         Get destination object from subaccount.
+          DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+          DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+
+        " Call RFC function module to get cost centres
+        CALL FUNCTION 'Z_BE_XA_GET_EMPLOYEES' DESTINATION lv_destination
+        EXPORTING iv_search_expression = lv_search_expression
+                  it_filters = lt_filter
+                  it_sort = lt_sort
+                  it_parameters = lt_parameters
+                  it_requested_elements = lt_requested_elements
+                  is_pagination = ls_pagination
+        IMPORTING ev_total_num_records = lv_number_of_records
+        TABLES    et_employees = lt_employees.
+
+        lv_records_int8 = lv_number_of_records.
+        io_response->set_total_number_of_records( lv_records_int8 ).
+        io_response->set_data( lt_employees ).
+
+
+        CATCH cx_root INTO DATA(lx_root).
+
+      ENDTRY.
+*    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,177 @@
+CLASS zcl_xa_companycode_rfc DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: CONSTRUCTOR RAISING cx_rfc_dest_provider_error,
+             get_company_code IMPORTING iv_company_code TYPE bukrs
+                           RETURNING VALUE(rs_ce_company_code) TYPE ZCE_XA_CompanyCode
+                           RAISING   cx_rap_query_prov_not_impl
+                                     cx_rap_query_provider,
+             check_company_code_active IMPORTING iv_company_code TYPE bukrs
+                           RETURNING VALUE(rv_cc_active) TYPE abap_boolean
+                           RAISING   cx_rap_query_prov_not_impl
+                                     cx_rap_query_provider,
+             zif_xa_rfc~select_from_rap_query_provider REDEFINITION.
+  PROTECTED SECTION.
+
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_COMPANYCODE_RFC IMPLEMENTATION.
+
+
+  METHOD check_company_code_active.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   TYPE STANDARD TABLE OF ZXA_GENERAL_COMPANY_COD_BAPI_S,
+          ls_data   TYPE STANDARD TABLE OF ZXA_GENERAL_COMPANY_COD_BAPI_S.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_company_code IS NOT INITIAL.
+
+    TRY.
+
+        me->zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_COMPANYCODE'.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'COMPANYCODE' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_company_code ) ) )
+                                            ( name = 'ISCLOSED' range = VALUE #( ( sign = 'I' option = 'NE' low = 'X' ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        rv_cc_active = abap_false.
+        IF lt_data IS NOT INITIAL.
+            if lt_data[ 1 ]-companycode eq iv_company_code.
+                rv_cc_active = abap_true.
+            endif.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_GET_COMPANY_CODES'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_GENERAL_COMPANY_COD_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_ALLCOMPANYCODES'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD get_company_code.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   LIKE STANDARD TABLE OF rs_ce_company_code.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_company_code IS NOT INITIAL.
+
+    TRY.
+        " Check for any company code can be done also against not active ones
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'COMPANYCODE' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_company_code ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        IF lt_data IS NOT INITIAL.
+          READ TABLE lt_data INTO rs_ce_company_code INDEX 1.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD zif_xa_rfc~select_from_rap_query_provider.
+
+    DATA: lr_rfc_data           TYPE REF TO data,
+          lr_custom_entity_data TYPE REF TO data,
+          lt_isclosed_filter   TYPE zxa_sys_selopt_rng_t.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+*
+    " Map the OData request parameters to the FM importing/table objects
+    me->map_rap_io_request_params( EXPORTING io_request = io_request
+                                   IMPORTING es_pagination = DATA(ls_pagination)
+                                             et_filters = DATA(lt_filter)
+                                             et_parameters = DATA(lt_parameters)
+                                             et_requested_elements = DATA(lt_requested_elements)
+                                             et_sort = DATA(lt_sort)
+                                             ev_search_expression = DATA(lv_search_expression) ).
+
+    me->zif_xa_rfc~gv_custom_entity_name = io_request->get_entity_id( ).
+
+    IF io_request->get_entity_id( ) EQ 'ZCE_XA_COMPANYCODE'.
+      LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_bapi_filter>).
+        CLEAR: lt_isclosed_filter[].
+        lt_isclosed_filter = VALUE #( ( name = 'ISCLOSED' range = VALUE #( ( sign = 'I' option = 'NE' low = 'X' ) ) ) ).
+        APPEND LINES OF lt_isclosed_filter TO <fs_bapi_filter>-single_select.
+      ENDLOOP.
+      " If the filter is blank, then add the documenttype = ZBTP..
+      IF lt_filter IS INITIAL.
+        lt_isclosed_filter = VALUE #( ( name = 'ISCLOSED' range = VALUE #( ( sign = 'I' option = 'NE' low = 'X' ) ) ) ).
+        APPEND INITIAL LINE TO lt_filter ASSIGNING <fs_bapi_filter>.
+        APPEND LINES OF lt_isclosed_filter TO <fs_bapi_filter>-single_select.
+      ENDIF.
+    ENDIF.
+
+    CREATE DATA: lr_rfc_data TYPE TABLE OF (zif_xa_rfc~gv_rfc_structure_name).
+    ASSIGN lr_rfc_data->* TO <fs_rfc_data>.
+
+    " Call RFC function module
+    me->call_rfc( EXPORTING is_pagination = ls_pagination
+                            it_filters = lt_filter
+                            it_parameters = lt_parameters
+                            it_requested_elements = lt_requested_elements
+                            it_sort = lt_sort
+                            iv_search_expression = lv_search_expression
+                  IMPORTING ev_subrc = DATA(lv_subrc)
+                            ev_total_num_records = DATA(lv_number_of_records)
+                            et_data = <fs_rfc_data> ).
+
+    IF lv_subrc EQ 0.
+      IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+        io_response->set_total_number_of_records( CONV int8( lv_number_of_records ) ).
+      ENDIF.
+
+      IF io_request->is_data_requested(  ).
+
+        CREATE DATA: lr_custom_entity_data TYPE TABLE OF (zif_xa_rfc~gv_custom_entity_name).
+        ASSIGN lr_custom_entity_data->* TO <fs_custom_entity_data>.
+
+        me->map_rfc_data( EXPORTING it_rfc_data = <fs_rfc_data>
+                          IMPORTING et_ce_data = <fs_custom_entity_data> ).
+
+        io_response->set_data( <fs_custom_entity_data> ).
+
+      ENDIF.
+
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.
