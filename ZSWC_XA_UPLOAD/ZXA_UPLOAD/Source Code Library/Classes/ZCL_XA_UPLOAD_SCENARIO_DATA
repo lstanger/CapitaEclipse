@@ -1,0 +1,63 @@
+CLASS zcl_xa_upload_scenario_data DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error.
+    METHODS: get_description IMPORTING iv_fieldname   TYPE zxa_upload_colid
+                             EXPORTING ev_description TYPE zxa_upload_description
+                             RAISING   cx_rap_query_prov_not_impl
+                                       cx_rap_query_provider..
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_SCENARIO_DATA IMPLEMENTATION.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_UPLD_GET_SCENARIO_DATA'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_UPLOAD_SCN_DATA_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_UPLOAD_SCENARIO_DATA'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD get_description.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   TYPE STANDARD TABLE OF zce_xa_upload_scenario_data.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_fieldname IS NOT INITIAL.
+
+    TRY.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'FIELDNAME' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_fieldname ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        IF lt_data IS NOT INITIAL.
+          " READ TABLE lt_data INTO data(ls_ce_profit_centre) INDEX 1.
+          ev_description = lt_data[ 1 ]-Description.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.

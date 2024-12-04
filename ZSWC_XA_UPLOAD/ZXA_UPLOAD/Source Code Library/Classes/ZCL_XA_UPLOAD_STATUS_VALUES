@@ -1,0 +1,35 @@
+CLASS zcl_xa_upload_status_values DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error.
+    METHODS: get_statuses EXPORTING et_statuses TYPE ZXA_UPLOAD_STATUSES_BAPI_t
+                             RAISING   cx_rap_query_prov_not_impl
+                                       cx_rap_query_provider..
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_STATUS_VALUES IMPLEMENTATION.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_UPLD_GET_STATUS_RANGE'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_UPLOAD_STATUSES_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_UPLOAD_STATUS_VALUES'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  method get_statuses.
+
+  endmethod.
+ENDCLASS.

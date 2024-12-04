@@ -1,0 +1,31 @@
+CLASS zcl_ce_xa_upload_scenario DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_UPLOAD_SCENARIO IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+    TRY.
+        NEW zcl_xa_upload_scenario(  )->zif_xa_rfc~select_from_rap_query_provider( EXPORTING io_request = io_request io_response = io_response ).
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.

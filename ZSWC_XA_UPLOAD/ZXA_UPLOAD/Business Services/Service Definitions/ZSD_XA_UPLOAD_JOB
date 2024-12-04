@@ -1,0 +1,22 @@
+@EndUserText.label: 'Mass upload jobs'
+define service Zsd_xa_upload_job {
+  expose Zce_xa_upload_jobs            as UploadJobs;
+  expose Zce_xa_upload_table_rows      as UploadJobRows;
+  expose Zce_xa_upload_table_values    as UploadJobValues;
+  expose Zce_xa_upload_table_msgs      as UploadJobMessages;
+  expose Zce_xa_upload_tables          as ConfigTables;
+  expose Zce_xa_upload_columns         as ConfigColumns;
+  expose Zce_xa_upload_table_hierarchy as ConfigHierarchy;
+  expose ZCE_XA_UPLOAD_SCENARIO        as Scenarios;
+  expose ZCE_XA_UPLOAD_SCENARIO_DATA   as ScenarioData;
+  expose ZCE_XA_UPLOAD_SCN_DATA_VALUES as ScenarioDataValue;
+  expose ZCE_XA_upload_files           as UploadFiles;
+  expose ZC_XA_UPLOAD_FILES            as UploadFilesExt;
+  expose ZCE_XA_UPLOAD_JOB_START       as JobStart;
+  expose ZI_XA_UPLOAD_STATUS           as UpoadStatus;
+  expose ZCE_SD_SALES_ORGS             as SalesOrgs;
+  expose ZCE_SD_DISTRIBUTION_CHANNELS  as DistributionChannels;
+  expose ZCE_SD_DIVISIONS              as Divisions;
+  expose ZCE_SD_SALES_OFFICE           as SalesOffice;
+  expose ZCE_XA_UPLOAD_STATUS_VALUES   as Statuses;
+}

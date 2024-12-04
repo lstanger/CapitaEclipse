@@ -1,0 +1,11 @@
+@EndUserText.label: 'Abstract Entity Parameter for getFile'
+@Metadata.allowExtensions: true
+
+define root abstract entity ZA_XA_FILE_KEY
+{
+    JobId: zxa_upload_jobid;
+    TableId: zxa_upload_tableid;
+    ColId: zxa_upload_colid;
+    
+    _value : composition [0..*] of za_xa_file_key_value;
+}

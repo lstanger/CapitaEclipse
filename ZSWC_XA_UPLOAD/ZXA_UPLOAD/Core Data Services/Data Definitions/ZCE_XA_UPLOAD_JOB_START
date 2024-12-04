@@ -1,0 +1,53 @@
+@EndUserText.label: 'Custom Entity for Upload Job Start'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_JOB_START'
+@Search.searchable: true
+
+define root custom entity ZCE_XA_UPLOAD_JOB_START
+
+{
+
+      @UI          : {
+        selectionField: [{position: 10}],
+        lineItem   : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key JobId        : zxa_upload_jobid;
+
+      @UI          : {
+        selectionField: [{position: 20}],
+        lineItem   : [{position: 20, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      Scenario     : zxa_upload_scenario;
+
+      @UI          : {
+        lineItem   : [{position: 30}]
+      }
+      Version      : zxa_upload_version;
+
+      @UI          : {
+        selectionField: [{position: 40}],
+        lineItem   : [{position: 40, importance: #HIGH, label : 'Creation Date' }]
+      }
+
+      @Search.defaultSearchElement: true
+      CreationDate : abap.dats;
+
+      @UI          : {
+        lineItem     : [{position: 50, label : 'Creation Time' }]
+      }
+
+      @Search.defaultSearchElement: true
+      CreationTime : abap.tims;
+
+      @UI          : {
+        selectionField: [{position: 60}],
+        lineItem     : [{position: 60}]
+      }
+
+      @Search.defaultSearchElement: true
+      Status       : zxa_upload_status;
+
+}

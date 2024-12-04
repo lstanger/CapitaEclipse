@@ -1,0 +1,107 @@
+@EndUserText.label: 'Custom Entity for Upload Jobs'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_JOB'
+@Search.searchable: true
+
+@UI.lineItem: [{criticality: 'Status'}]
+define root custom entity Zce_xa_upload_jobs
+
+{
+      @UI          : {
+        selectionField: [{position: 10}],
+        lineItem   : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key JobId        : zxa_upload_jobid;
+
+      @UI          : {
+        lineItem   : [{position: 20 }],
+        hidden     : true
+      }
+      Scenario     : zxa_upload_scenario;
+
+      @UI          : {
+        lineItem   : [{position: 30}],
+        hidden     : true
+      }
+      Version      : zxa_upload_version;
+
+      @UI          : {
+        selectionField: [{position: 40}],
+        lineItem   : [{position: 40, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      CreationDate : zxa_created_on;
+
+      @UI          : {
+        lineItem   : [{position: 50, label : 'Creation Time' }]
+      }
+
+      @Search.defaultSearchElement: true
+      CreationTime : abap.tims;
+
+      @UI          : {
+        selectionField        : [{position: 50}],
+        lineItem   : [{position: 60, importance: #HIGH }]
+
+      }
+      @Search.defaultSearchElement: true
+      @Consumption.valueHelpDefinition: [{
+                entity       : {   name: 'ZCE_XA_Employee',
+                            element: 'UserID' }}]
+      @ObjectModel.foreignKey.association: '_CreatedBy'
+      CreatedBy    : zxa_created_by;
+
+      @UI          : {
+        selectionField: [{position: 60}],
+        lineItem   : [{position: 70, importance: #HIGH, criticality: 'Status'}]
+      }
+
+      @Search.defaultSearchElement: true
+      //@Consumption.valueHelpDefinition: [{ entity: {name: 'ZI_XA_UPLOAD_STATUS' , element: 'value_low' },
+      @Consumption.valueHelpDefinition: [{ entity: {name: 'ZCE_XA_UPLOAD_STATUS_VALUES' , element: 'Status' },
+                                additionalBinding: [{ localElement: 'Scenario', element: 'Scenario', usage: #FILTER },
+                                                    { localElement: 'Version', element: 'Version', usage: #FILTER }],
+                                   distinctValues: true
+      }]
+      @ObjectModel.foreignKey.association: '_Status'
+      Status       : zxa_upload_status;
+
+      @UI          : {
+        lineItem   : [{position: 80, label : 'File Id' }],
+        hidden     : true
+      }
+      FileId       : zxa_attachment_id;
+
+      @UI          : {
+        lineItem   : [{position: 90, label : 'Filename' }]
+      }
+      Filename     : abap.char(200);
+
+      Deleted      : abap_boolean;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Rows        : composition [0..*] of Zce_xa_upload_table_rows;
+
+//      @ObjectModel.sort.enabled: false
+//      @ObjectModel.filter.enabled: false
+//      _Status      : association [0..1] to ZI_XA_UPLOAD_STATUS on _Status.value_low = $projection.Status;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      _Status      : association [0..1] to ZCE_XA_UPLOAD_STATUS_VALUES on _Status.Status = $projection.Status;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _CreatedBy   : association [0..1] to ZCE_XA_Employee on _CreatedBy.UserID = $projection.CreatedBy;
+      
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _ScenarioDataValues : association [0..*] to ZCE_XA_UPLOAD_SCN_DATA_VALUES on _ScenarioDataValues.JobId = $projection.JobId;
+
+}

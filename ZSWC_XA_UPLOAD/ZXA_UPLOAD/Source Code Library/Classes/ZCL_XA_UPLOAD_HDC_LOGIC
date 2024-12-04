@@ -1,0 +1,120 @@
+CLASS zcl_xa_upload_hdc_logic DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PRIVATE .
+
+  PUBLIC SECTION.
+    TYPES: tt_file_items    TYPE STANDARD TABLE OF zce_sd_so_item WITH KEY SalesOrder SalesOrderItem.
+
+    CLASS-METHODS get_instance      RETURNING VALUE(ro_instance) TYPE REF TO zcl_xa_upload_hdc_logic.
+
+    METHODS: get_file IMPORTING iv_jobid         TYPE zxa_upload_jobid
+                                iv_tableid       TYPE zxa_upload_tableid
+                                iv_colid         TYPE zxa_upload_colid
+                                it_fieldvalues   TYPE zxa_upload_table_value_bapi_t
+                                iv_zip           TYPE abap_boolean
+                      RETURNING VALUE(rs_output) TYPE zxa_upload_file_s,
+
+      get_template IMPORTING iv_scenario      TYPE zxa_upload_scenario
+                             iv_version       TYPE zxa_upload_version
+                             iv_additional_info type ZXA_UPLOAD_ADDITIONAL_INFO optional
+                   RETURNING VALUE(rs_output) TYPE zxa_upload_file_s.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance TYPE REF TO zcl_xa_upload_hdc_logic.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_HDC_LOGIC IMPLEMENTATION.
+
+
+  METHOD get_file.
+    DATA: lt_messages TYPE zxa_bapiret2_t.
+    TRY.
+
+        " Read from backend
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+*        DATA(lt_fieldvalues) = VALUE zxa_upload_table_value_bapi_t( FOR ls_key IN it_file_keys ( value = ls_key ) ).
+
+        " Call RFC function module to get purchase orders items
+        CALL FUNCTION 'Z_BE_XA_UPLD_GET_FILE' DESTINATION lv_destination
+          EXPORTING
+            iv_jobid              = iv_jobid
+            iv_tableid            = iv_tableid
+            iv_colid              = iv_colid
+            iv_zip                = iv_zip
+          IMPORTING
+            ev_file               = rs_output-stream
+          TABLES
+            it_fieldvalues        = it_fieldvalues
+            et_messages           = lt_messages
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+        IF sy-subrc EQ 0.
+          rs_output-mimetype = COND #( WHEN iv_zip = abap_true THEN 'application/x-zip' ELSE 'application/pdf' ).
+        ENDIF.
+
+        IF rs_output-stream IS INITIAL AND lt_messages IS NOT INITIAL.
+          rs_output-message = lt_messages[ 1 ]-message.
+          rs_output-type = lt_messages[ 1 ]-type.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+  ENDMETHOD.
+
+
+  METHOD get_instance.
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+  ENDMETHOD.
+
+
+  METHOD get_template.
+    DATA: lt_messages TYPE zxa_bapiret2_t.
+    TRY.
+
+        " Read from backend
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+        " Call RFC function module to get purchase orders items
+        CALL FUNCTION 'Z_BE_XA_UPLD_GET_TEMPLATE' DESTINATION lv_destination
+          EXPORTING
+            iv_scenario           = iv_scenario
+            iv_version            = iv_version
+            iv_additional_info    = iv_additional_info
+          IMPORTING
+            ev_template           = rs_output-stream
+          TABLES
+            et_messages           = lt_messages
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+        IF sy-subrc EQ 0.
+          rs_output-mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'.
+        ENDIF.
+
+        IF rs_output-stream IS INITIAL AND lt_messages IS NOT INITIAL.
+          rs_output-message = lt_messages[ 1 ]-message.
+          rs_output-type = lt_messages[ 1 ]-type.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.

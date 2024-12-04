@@ -1,0 +1,31 @@
+@EndUserText.label: 'Status Values for Uploads'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_STATUS_VALUES'
+@Search.searchable: true
+define root custom entity ZCE_XA_UPLOAD_STATUS_VALUES
+{
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Status'
+      @ObjectModel.text.element: ['Text']
+  key Status   : abap.char(10);
+
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Description'
+      @Semantics.text: true
+      Text     : abap.char(60);
+
+      @UI      : {
+        hidden : true
+      }
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Search.defaultSearchElement: true
+      Scenario : zxa_upload_scenario;
+
+      @UI      : {
+        hidden : true
+      }
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Search.defaultSearchElement: true
+      Version  : zxa_upload_version;
+}

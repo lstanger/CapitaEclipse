@@ -1,0 +1,42 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Mass Upload file storage'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType:{
+    serviceQuality: #X,
+    sizeCategory: #S,
+    dataClass: #MIXED
+}
+define root view entity ZI_XA_UPLOAD_FILES
+  as select from zxa_upload_files
+{
+  key attachmentid as AttachmentId,
+
+      externalid   as ExternalId,
+      scenario     as Scenario,
+      version      as Version,
+      jobid        as JobId,
+      draftid      as DraftId,
+      isdraft      as IsDraft,
+      externaltype as ExternalType,
+      @EndUserText.label: 'File'
+      @Semantics.largeObject:{
+          mimeType: 'MimeType',
+          fileName: 'FileName',
+          contentDispositionPreference: #INLINE
+      }
+      content      as Content,
+      @Semantics.mimeType: true
+      mimetype     as MimeType,
+      filename     as FileName,
+      filesize     as FileSize,
+      createdby    as CreatedBy,
+      createdat    as CreatedAt,
+      field1       as Field1,
+      field2       as Field2,
+      field3       as Field3,
+      field4       as Field4,
+      field5       as Field5,
+      field6       as Field6
+
+}

@@ -1,0 +1,90 @@
+CLASS zcl_xa_upload_table_row DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error.
+    METHODS: get_description IMPORTING iv_jobid       TYPE zxa_upload_jobid
+                                       iv_scenario    TYPE zxa_upload_scenario
+                                       iv_version     TYPE zxa_upload_version
+                                       iv_tableid     TYPE zxa_upload_tableid
+                                       iv_recordid    TYPE zxa_upload_recordid
+                             EXPORTING
+                                       ev_Status      TYPE zxa_upload_status
+                                       ev_description TYPE zxa_upload_description
+                             RAISING   cx_rap_query_prov_not_impl
+                                       cx_rap_query_provider.
+  PROTECTED SECTION.
+    METHODS: map_rap_io_request_params REDEFINITION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_TABLE_ROW IMPLEMENTATION.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_UPLD_GET_ROW_INFO'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_UPLOAD_TABLE_ROW_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_UPLOAD_TABLE_ROWS'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD get_description.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   TYPE STANDARD TABLE OF zce_xa_upload_table_rows.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_tableid IS NOT INITIAL.
+
+    TRY.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'SCENARIO' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_scenario ) ) ) ).
+        lt_filter = VALUE #( BASE lt_filter ( name = 'VERSION' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_version ) ) ) ).
+        lt_filter = VALUE #( BASE lt_filter ( name = 'TABLEID' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_tableid ) ) ) ).
+        lt_filter = VALUE #( BASE lt_filter ( name = 'RECORDID' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_recordid ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        IF lt_data IS NOT INITIAL.
+          " READ TABLE lt_data INTO data(ls_ce_profit_centre) INDEX 1.
+          ev_status = lt_data[ 1 ]-Status.
+          ev_description = lt_data[ 1 ]-Description.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD map_rap_io_request_params.
+
+    super->map_rap_io_request_params( EXPORTING io_request = io_request
+                                      IMPORTING es_pagination = es_pagination
+                                                et_filters = et_filters
+                                                et_parameters = et_parameters
+                                                et_requested_elements = et_requested_elements
+                                                et_sort = et_sort
+                                                ev_search_expression = ev_search_expression ).
+
+    "Increase page size
+    es_pagination-top = 200000.
+
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,7 @@
+@EndUserText.label: 'Abstract Entity Parameter for start job'
+@Metadata.allowExtensions: true
+
+define abstract entity ZA_XA_JOBID{    
+     
+    JobId: zxa_upload_jobid;
+}

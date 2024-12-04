@@ -1,0 +1,26 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Domain Read'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType:{
+    serviceQuality: #X,
+    sizeCategory: #S,
+    dataClass: #MIXED
+}
+
+@Search.searchable: true
+
+define view entity ZI_XA_UPLOAD_STATUS
+  as select from DDCDS_CUSTOMER_DOMAIN_VALUE_T( p_domain_name: 'ZXA_UPLOAD_STATUS')
+{
+      @EndUserText.label: 'Status'
+      @ObjectModel.text.element: ['text']
+  key value_low,
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Description'
+      @Semantics.text: true
+      text
+}
+where
+      domain_name = 'ZXA_UPLOAD_STATUS'
+  and language    = $session.system_language

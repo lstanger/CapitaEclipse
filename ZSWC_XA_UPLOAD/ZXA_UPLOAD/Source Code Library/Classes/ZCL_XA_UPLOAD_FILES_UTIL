@@ -1,0 +1,271 @@
+CLASS zcl_xa_upload_files_util DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PRIVATE .
+
+  PUBLIC SECTION.
+
+    TYPES: tt_upload_files TYPE TABLE OF ZCE_XA_upload_files.
+
+
+    CLASS-METHODS get_instance      RETURNING VALUE(ro_instance) TYPE REF TO zcl_xa_upload_files_util.
+
+    METHODS:
+      discard_draft_upload_files
+        IMPORTING
+          iv_draftid TYPE sdraft_uuid,
+*      delete_ecc_attachment
+*        IMPORTING
+*          iv_fileid type zxa_ecc_file_id
+*          iv_externalid type zxa_external_att_id
+*          iv_externaltype type zxa_external_att_type,
+      activate_draft_upload_files
+        IMPORTING
+          iv_draftid       TYPE sdraft_uuid
+          iv_externalid    TYPE zxa_external_att_id
+          iv_is_ecc_upload TYPE abap_boolean,
+      get_ecc_upload_files
+        IMPORTING
+          io_request      TYPE REF TO if_rap_query_request OPTIONAL
+          iv_objtype      TYPE zxa_external_att_type OPTIONAL
+          iv_external_key TYPE zxa_external_att_id OPTIONAL
+        EXPORTING
+          et_upload_files TYPE tt_upload_files
+          ev_num_of_rec   TYPE int8
+        RAISING
+          cx_rap_query_provider,
+      get_content
+        IMPORTING
+          is_attachment     TYPE zxa_att_bapi_s
+        RETURNING
+          VALUE(rv_content) TYPE xstring
+        RAISING
+          cx_rap_query_provider.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    DATA: mt_buffer TYPE TABLE OF zxa_upload_files_buffer_s.
+    CLASS-DATA: go_instance TYPE REF TO zcl_xa_upload_files_util.
+
+
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_FILES_UTIL IMPLEMENTATION.
+
+
+  METHOD activate_draft_upload_files.
+
+*    MODIFY ENTITIES OF ZI_XA_upload_files
+*         ENTITY upload_files
+*         EXECUTE activateAllDraftupload_files FROM
+*         VALUE #( ( %cid = |ACTIVATE_{ iv_draftid }|
+*                    %param-DraftId = iv_draftid
+*                    %param-ExternalId = iv_externalid
+*                    %param-IsEccUpload = iv_is_ecc_upload ) )
+*         REPORTED DATA(discard_reported)
+*         FAILED DATA(discard_failed)
+*         MAPPED DATA(discard_mapped).
+
+  ENDMETHOD.
+
+
+  METHOD discard_draft_upload_files.
+
+*    MODIFY ENTITIES OF ZI_XA_UPLOAD_FILES
+*         ENTITY upload_files
+*         EXECUTE discardAllDraftupload_files FROM
+*         VALUE #( ( %cid = |DISCARD_{ iv_draftid }|
+*                    %param-DraftId = iv_draftid ) )
+*         REPORTED DATA(discard_reported)
+*         FAILED DATA(discard_failed)
+*         MAPPED DATA(discard_mapped).
+
+
+  ENDMETHOD.
+
+
+  METHOD get_content.
+
+    TRY.
+        " Get Instance from system helper
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+        " Get content
+        CALL FUNCTION 'Z_BE_XA_GET_ATT_CONTENT' DESTINATION lv_destination_new
+          EXPORTING
+            iv_file_id            = is_attachment-attachmentid
+          IMPORTING
+            ev_content            = rv_content
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+        CASE sy-subrc.
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = 'Z_BE_MM_GET_PO_ATTACHMENTS'.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = 'Z_BE_MM_GET_PO_ATTACHMENTS'.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = 'Z_BE_MM_GET_PO_ATTACHMENTS'.
+        ENDCASE.
+
+
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_ecc_upload_files.
+
+    DATA: lv_external_id     TYPE zxa_external_att_id,
+          lv_external_type   TYPE zxa_external_att_type,
+          lv_file_read       TYPE abap_boolean VALUE abap_false,
+          lt_attachachments  TYPE zxa_att_bapi_t,
+          ls_upload_files_ce TYPE  ZCE_XA_upload_files,
+          lt_upload_files_ce TYPE TABLE OF ZCE_XA_upload_files.
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+
+          LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+            LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+              IF <fs_single_select>-range IS NOT INITIAL.
+                CASE <fs_single_select>-name.
+                  WHEN 'EXTERNALID'.
+                    lv_external_id  = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ATTACHMENTID'.
+                    lv_file_read = abap_true.
+                  WHEN 'EXTERNALTYPE'.
+                    lv_external_type = <fs_single_select>-range[ 1 ]-low.
+                ENDCASE.
+              ENDIF.
+            ENDLOOP.
+          ENDLOOP.
+
+        ELSE.
+
+          APPEND INITIAL LINE TO lt_filter ASSIGNING <fs_filter>.
+          APPEND INITIAL LINE TO <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_select>).
+
+          <fs_select>-name = 'EXTERNALID'.
+          <fs_select>-range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_external_key ) ).
+
+          APPEND INITIAL LINE TO <fs_filter>-single_select ASSIGNING <fs_select>.
+          <fs_select>-name = 'EXTERNALTYPE'.
+          <fs_select>-range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_objtype ) ).
+
+        ENDIF.
+
+        CALL FUNCTION 'Z_BE_XA_GET_ATTACHMENTS' DESTINATION lv_destination_new
+          EXPORTING
+            iv_search_expression  = lv_search_expression
+            it_filters            = lt_filter
+            it_sort               = lt_sort
+            it_parameters         = lt_parameters
+            it_requested_elements = lt_requested_elements
+            is_pagination         = ls_pagination
+          TABLES
+            et_attachments        = lt_attachachments
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+
+        CASE sy-subrc.
+          WHEN 0.
+            LOOP AT lt_attachachments INTO DATA(ls_purchase_order_att).
+              ls_upload_files_ce = CORRESPONDING #( ls_purchase_order_att ).
+              ls_upload_files_ce-ExternalId = lv_external_id .
+              ls_upload_files_ce-ExternalType = lv_external_type.
+              IF lv_file_read EQ abap_true.
+                CALL FUNCTION 'Z_BE_XA_GET_ATT_CONTENT' DESTINATION lv_destination_new
+                  EXPORTING
+                    iv_file_id            = ls_upload_files_ce-attachmentid
+                  IMPORTING
+                    ev_content            = ls_upload_files_ce-Content
+                  EXCEPTIONS
+                    system_failure        = 1
+                    communication_failure = 2
+                    OTHERS                = 99.
+                IF sy-subrc <> 0.
+                  CLEAR ls_upload_files_ce-Content.
+                ENDIF.
+              ENDIF.
+
+              lt_upload_files_ce = VALUE #( BASE lt_upload_files_ce ( ls_upload_files_ce ) ).
+            ENDLOOP.
+
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = 'Z_BE_XA_GET_ATTACHMENTS'.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = 'Z_BE_XA_GET_ATTACHMENTS'.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = 'Z_BE_XA_GET_ATTACHMENTS'.
+        ENDCASE.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+    et_upload_files = lt_upload_files_ce.
+    ev_num_of_rec  =  lines( lt_upload_files_ce )  .
+
+  ENDMETHOD.
+
+
+  METHOD get_instance.
+
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+
+
+  ENDMETHOD.
+ENDCLASS.

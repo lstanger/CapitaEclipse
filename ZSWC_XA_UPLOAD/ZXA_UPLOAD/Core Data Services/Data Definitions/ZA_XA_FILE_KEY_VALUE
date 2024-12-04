@@ -1,0 +1,8 @@
+@EndUserText.label: 'File key value for download'
+define abstract entity ZA_XA_FILE_KEY_VALUE
+{
+    value : zxa_upload_value;
+    
+    _parent : association to parent ZA_XA_FILE_KEY;
+    
+}

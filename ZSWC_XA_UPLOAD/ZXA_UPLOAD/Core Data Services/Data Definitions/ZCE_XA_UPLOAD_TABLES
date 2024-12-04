@@ -1,0 +1,50 @@
+@EndUserText.label: 'Custom Entity for Upload Job Tables'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_TABLE'
+@Search.searchable: true
+
+define custom entity Zce_xa_upload_tables
+
+{
+
+      @UI         : {
+        selectionField: [{position: 10}],
+        lineItem  : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key Scenario    : zxa_upload_scenario;
+
+      @UI         : {
+        selectionField: [{position: 20}],
+        lineItem  : [{position: 20, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      @Semantics.text: true
+  key Version     : zxa_upload_version;
+
+      @UI         : {
+        selectionField: [{position: 30}],
+        lineItem  : [{position: 30, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key TableId     : zxa_upload_tableid;
+
+      @UI         : {
+      selectionField: [{position: 40}],
+      lineItem    : [{position: 40, importance: #HIGH }]
+      }
+
+      Description : zxa_upload_description;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true 
+      _Columns : composition [0..*] of Zce_xa_upload_columns;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Hierarchy  : composition [0..1] of Zce_xa_upload_table_hierarchy;
+}

@@ -1,0 +1,104 @@
+@EndUserText.label: 'Custom Entity for Upload Job Columns'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_COLUMN'
+@Search.searchable: true
+
+define custom entity Zce_xa_upload_columns
+
+{
+
+      @UI              : {
+        selectionField : [{position: 10}],
+        lineItem       : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key Scenario         : zxa_upload_scenario;
+
+      @UI              : {
+        selectionField : [{position: 20}],
+        lineItem       : [{position: 20, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      @Semantics.text  : true
+  key Version          : zxa_upload_version;
+
+      @UI              : {
+        selectionField : [{position: 30}],
+        lineItem       : [{position: 30, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key TableId          : zxa_upload_tableid;
+
+      @UI              : {
+        selectionField : [{position: 40}],
+        lineItem       : [{position: 40, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key ColId            : zxa_upload_colid;
+
+      @UI              : {
+      selectionField   : [{position: 50}],
+      lineItem         : [{position: 50, importance: #HIGH }]
+      }
+
+      Description      : zxa_upload_description;
+
+      @UI              : {
+      selectionField   : [{position: 60}],
+      lineItem         : [{position: 60, importance: #HIGH }]
+      }
+
+      ColPosition      : abap.numc( 5 );
+
+      @UI              : {
+      selectionField   : [{position: 70}],
+      lineItem         : [{position: 70, importance: #HIGH }]
+      }
+
+      SemanticKey      : abap_boolean;
+
+
+      @UI              : {
+      selectionField   : [{position: 80}],
+      lineItem         : [{position: 80, importance: #HIGH }]
+      }
+
+      SemanticObject   : abap.char( 100 );
+
+      @UI              : {
+      selectionField   : [{position: 90}],
+      lineItem         : [{position: 90, importance: #HIGH }]
+      }
+
+      SemanticAction   : abap.char( 100 );
+
+      @UI              : {
+      selectionField   : [{position: 100}],
+      lineItem         : [{position: 100, importance: #HIGH }]
+      }
+      
+      SemanticKeyField : abap.char( 100 );
+
+      @UI              : {
+      selectionField   : [{position: 110}],
+      lineItem         : [{position: 110, importance: #HIGH }]
+      }
+
+      PostProcessField : abap_boolean;
+
+      IsDate           : abap_boolean;
+
+      HideField        : abap_boolean; 
+      
+      Downloadable     : abap_boolean; 
+      
+      @ObjectModel.sort.enabled   : false
+      @ObjectModel.filter.enabled : false
+      _Table           : association to parent Zce_xa_upload_tables on  $projection.Scenario = _Table.Scenario 
+                                                                    and $projection.Version  = _Table.Version
+                                                                    and $projection.TableId  = _Table.TableId;
+
+}

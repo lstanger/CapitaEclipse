@@ -1,0 +1,41 @@
+@EndUserText.label: 'Custom Entity for Upload Scenario'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_SCENARIO'
+@Search.searchable: true
+
+define root custom entity ZCE_XA_UPLOAD_SCENARIO
+
+{
+
+      @UI           : {
+        selectionField: [{position: 10}],
+        lineItem    : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key Scenario      : zxa_upload_scenario;
+
+      @UI           : {
+        lineItem    : [{position: 20}]
+      }
+  key Version       : zxa_upload_version;
+      
+      @UI           : {
+        lineItem    : [{position: 30, label : 'Job Required Simulation' }]
+      }
+      JobRequiresSimulation : abap_boolean;
+      
+      @UI           : {
+        lineItem    : [{position: 40, label : 'Show Work Item History' }]
+      }
+      ShowWorkItemHistory : abap_boolean;
+      
+      @UI           : {
+        lineItem    : [{position: 50, label : 'Template File Name' }]
+      }
+      Template_FileName   : abap.char(40);
+      
+      @UI           : {
+        lineItem    : [{position: 60, label : 'Show Download Spreadsheet Button' }]
+      }
+      ShowDownloadSpreadsheetButton : abap_boolean;
+}

@@ -1,0 +1,39 @@
+@EndUserText.label: 'Upload Scenario Data Values'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_SDV'
+@Search.searchable: true
+
+define root custom entity ZCE_XA_UPLOAD_SCN_DATA_VALUES
+{
+      @UI          : {
+        selectionField: [{position: 10}],
+        lineItem   : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key JobId        : zxa_upload_jobid;
+  key FieldName     : abap.char(40);
+
+      @UI          : {
+        lineItem   : [{position: 20 }],
+        hidden     : true
+      }
+      Scenario     : zxa_upload_scenario;
+
+      @UI          : {
+        lineItem   : [{position: 30}],
+        hidden     : true
+      }
+      Version      : zxa_upload_version;
+      
+      FieldPosition : abap.numc(5);
+      FieldValue    : abap.char(1333);
+      Required      : abap_boolean;
+      
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _ScenarioData : association [0..1] to ZCE_XA_UPLOAD_SCENARIO_DATA on _ScenarioData.Scenario = $projection.Scenario
+                                                                        and _ScenarioData.FieldName = $projection.FieldName;
+
+  
+}

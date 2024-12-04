@@ -1,0 +1,68 @@
+CLASS zcl_xa_upload_create_job DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    METHODS: constructor RAISING cx_rfc_dest_provider_error.
+    METHODS: create_job IMPORTING iv_scenario TYPE zxa_upload_scenario
+                                  iv_version  TYPE zxa_upload_version
+                                  iv_document TYPE string
+                        EXPORTING
+                                  ev_jobid    TYPE zxa_upload_jobid
+                                  es_return   TYPE bapiret2
+                        RAISING   cx_rap_query_prov_not_impl
+                                  cx_rap_query_provider..
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_XA_UPLOAD_CREATE_JOB IMPLEMENTATION.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_XA_UPLD_CREATE_JOB'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZXA_UPLOAD_JOB_CREATE_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_XA_UPLOAD_JOB_CREATE'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD create_job.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   TYPE STANDARD TABLE OF zce_sd_sales_orgs.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_scenario IS NOT INITIAL.
+
+    TRY.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'SCENARIO' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_scenario ) ) ) ).
+        lt_filter = VALUE #( BASE lt_filter ( name = 'VERSION' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_version ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        IF lt_data IS NOT INITIAL.
+          " READ TABLE lt_data INTO data(ls_ce_profit_centre) INDEX 1.
+          ev_jobid = lt_data[ 1 ]-Country.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+
+    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.

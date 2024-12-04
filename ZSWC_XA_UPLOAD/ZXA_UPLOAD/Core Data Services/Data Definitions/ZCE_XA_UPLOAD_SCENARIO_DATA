@@ -1,0 +1,70 @@
+@EndUserText.label: 'Custom Entity for Upload Scenario Data'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_SCENARIO_DATA'
+@Search.searchable: true
+
+define root custom entity ZCE_XA_UPLOAD_SCENARIO_DATA
+
+{
+
+      @UI           : {
+        selectionField: [{position: 10}],
+        lineItem    : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key Scenario      : zxa_upload_scenario;
+
+      @UI           : {
+        lineItem    : [{position: 20}]
+      }
+  key Version       : zxa_upload_version;
+
+      @UI           : {
+        selectionField: [{position: 30}],
+        lineItem    : [{position: 30, importance: #HIGH, label : 'Field Position' }]
+      }
+
+      @Search.defaultSearchElement: true
+      FieldPosition : abap.numc( 5 );
+
+      @UI           : {
+        lineItem    : [{position: 40, label : 'Field Name' }]
+      }
+
+      @Search.defaultSearchElement: true
+      FieldName     : abap.char( 40 );
+
+      @UI           : {
+        lineItem    : [{position: 50, label : 'Required' }]
+      }
+
+      Required      : abap_boolean;
+
+      @UI           : {
+        lineItem    : [{position: 60, label : 'Required' }]
+      }
+
+      Entity        : abap.char( 40 );
+
+      @UI           : {
+        lineItem    : [{position: 70, label : 'Required' }]
+      }
+
+      ReturnField   : abap.char( 40 );
+
+      @UI           : {
+        lineItem    : [{position: 80, label : 'Description' }]
+      }
+
+      Description   : zxa_upload_description;
+      
+      @UI           : {
+        lineItem    : [{position: 90, label : 'Job Required Simulation' }]
+      }
+      JobRequiresSimulation : abap_boolean;
+      
+      @UI           : {
+        lineItem    : [{position: 95, label : 'Show Download Spreadsheet Button' }]
+      }
+      ShowDownloadSpreadsheetButton : abap_boolean;
+}

@@ -1,0 +1,28 @@
+managed implementation in class zbp_i_xa_upload_files unique;
+strict ( 2 );
+
+define behavior for ZI_XA_UPLOAD_FILES alias UploadFiles
+persistent table zxa_upload_files
+//late numbering
+lock master
+
+early numbering
+
+authorization master ( instance )
+//etag master <field_name>
+{
+  create;
+  update;
+  delete;
+  field (readonly:update) AttachmentId;
+  field ( readonly ) CreatedAt, CreatedBy;
+  determination determineAdmin on modify { create; }
+
+  // Saving file in ECC
+  action sendFileToEcc;
+  action startJob parameter ZA_XA_JOBID;
+  action setDeleted parameter ZA_XA_JOBID;
+  //function getFile deep table parameter ZA_XA_FILE_KEY result [1] zxa_upload_file_s;   //deep parameter not working
+  function getFile parameter zxa_upload_table_value_bapi_s result [1] zxa_upload_file_s;
+  function getTemplate parameter zxa_upload_scenario_bapi_s result [1] zxa_upload_file_s;
+}

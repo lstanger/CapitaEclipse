@@ -1,0 +1,15 @@
+projection;
+strict ( 2 );
+
+define behavior for ZC_XA_UPLOAD_FILES alias UploadFiles
+{
+  use create;
+  use update;
+  use delete;
+
+  use action sendFileToEcc;
+  use action startJob;
+  use action setDeleted;
+  use function getFile;
+  use function getTemplate;
+}

@@ -1,0 +1,90 @@
+@EndUserText.label: 'Custom Entity for Upload Job Table Rows'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_UPLOAD_TABLE_MSG'
+@Search.searchable: true
+
+define custom entity Zce_xa_upload_table_msgs
+
+{
+
+      @UI           : {
+        selectionField: [{position: 10}],
+        lineItem    : [{position: 10, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key JobId         : zxa_upload_jobid;
+
+      @UI           : {
+      selectionField: [{position: 20}],
+      lineItem      : [{position: 20, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key Scenario      : zxa_upload_scenario;
+
+      @UI           : {
+        selectionField: [{position: 30}],
+        lineItem    : [{position: 30, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      @Semantics.text: true
+  key Version       : zxa_upload_version;
+
+      @UI           : {
+        selectionField: [{position: 40}],
+        lineItem    : [{position: 40, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key TableId       : zxa_upload_tableid;
+
+      @UI           : {
+        selectionField: [{position: 50}],
+        lineItem    : [{position: 50, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key RecordId      : zxa_upload_recordid;
+
+      @UI           : {
+        selectionField: [{position: 60}],
+        lineItem    : [{position: 60, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+  key MessageIndex  : zxa_upload_version;
+
+      @UI           : {
+        lineItem    : [{position: 70, importance: #HIGH }]
+      }
+
+      Type          : abap.char( 1 );
+
+      @UI           : {
+      lineItem      : [{position: 80 }]
+      }
+
+      Id            : abap.char(20);
+
+      @UI           : {
+      lineItem      : [{position: 90 }]
+      }
+      MessageNumber : abap.numc(3);
+
+      @UI           : {
+        selectionField: [{position: 70}],
+        lineItem    : [{position: 90, importance: #HIGH }]
+      }
+
+      @Search.defaultSearchElement: true
+      Message       : abap.char( 220 );
+
+      @ObjectModel.sort.enabled   : false
+      @ObjectModel.filter.enabled : false
+      _Row          : association to parent Zce_xa_upload_table_rows on  $projection.JobId    = _Row.JobId
+                                                                     and $projection.Scenario = _Row.Scenario
+                                                                     and $projection.Version  = _Row.Version
+                                                                     and $projection.TableId  = _Row.TableId
+                                                                     and $projection.RecordId = _Row.RecordId;
+}

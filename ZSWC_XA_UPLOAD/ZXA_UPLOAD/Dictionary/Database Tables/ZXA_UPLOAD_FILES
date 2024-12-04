@@ -1,0 +1,30 @@
+@EndUserText.label : 'Mass Upload file storage'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zxa_upload_files {
+
+  key client       : abap.clnt not null;
+  key attachmentid : zxa_attachment_id not null;
+  externalid       : zxa_external_att_id;
+  scenario         : zxa_upload_scenario;
+  version          : zxa_upload_version;
+  jobid            : zxa_upload_jobid;
+  draftid          : sdraft_uuid;
+  isdraft          : abap_boolean;
+  externaltype     : zxa_external_att_type;
+  content          : zxa_attachment_content;
+  mimetype         : abap.char(128);
+  filename         : abap.char(200);
+  filesize         : abap.int4;
+  createdby        : syuname;
+  createdat        : sydate;
+  field1           : abap.char(100);
+  field2           : abap.char(100);
+  field3           : abap.char(100);
+  field4           : abap.char(100);
+  field5           : abap.char(100);
+  field6           : abap.char(100);
+
+}

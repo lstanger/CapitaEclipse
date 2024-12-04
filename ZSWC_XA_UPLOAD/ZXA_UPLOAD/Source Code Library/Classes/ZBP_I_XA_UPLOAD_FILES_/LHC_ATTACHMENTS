@@ -1,0 +1,273 @@
+CLASS lhc_Attachments DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR UploadFiles RESULT result.
+
+    METHODS sendFileToEcc FOR MODIFY
+      IMPORTING keys FOR ACTION UploadFiles~sendFileToEcc.
+    METHODS determineadmin FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR uploadfiles~determineadmin.
+    METHODS startJob FOR MODIFY
+      IMPORTING keys FOR ACTION uploadfiles~startJob.
+    METHODS setDeleted FOR MODIFY
+      IMPORTING keys FOR ACTION uploadfiles~setDeleted.
+    METHODS getFile FOR READ
+      IMPORTING keys FOR FUNCTION uploadfiles~getFile RESULT result.
+    METHODS getTemplate FOR READ
+      IMPORTING keys FOR FUNCTION uploadfiles~getTemplate RESULT result.
+
+    METHODS earlyNumbering_Create FOR NUMBERING
+      IMPORTING entities FOR CREATE UploadFiles.
+
+ENDCLASS.
+
+CLASS lhc_Attachments IMPLEMENTATION.
+
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD earlynumbering_create.
+
+    LOOP AT entities INTO DATA(ls_entity).
+      IF ls_entity-attachmentid IS NOT INITIAL.
+        APPEND CORRESPONDING #( ls_entity ) TO mapped-uploadfiles.
+      ELSE.
+        TRY.
+            DATA(lv_new_id) = cl_system_uuid=>create_uuid_x16_static( ).
+            ls_entity-%key-AttachmentId = lv_new_id.
+            APPEND VALUE #( %cid  = ls_entity-%cid
+                            "%tky is not available since we are in create
+                            %key  = ls_entity-%key
+                            attachmentid = lv_new_id
+                        ) TO mapped-uploadfiles.
+          CATCH cx_uuid_error INTO DATA(lx_exc).
+        ENDTRY.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD sendFileToEcc.
+
+    DATA: lt_messages    TYPE TABLE OF bapiret2,
+          lt_fieldvalues TYPE TABLE OF zxa_upload_scn_values_bapi_s,
+          new_jobid      TYPE zxa_upload_jobid.
+
+    READ ENTITIES OF zi_xa_upload_files IN LOCAL MODE
+          ENTITY UploadFiles
+          ALL FIELDS  WITH CORRESPONDING #( keys )
+          RESULT DATA(lt_entities).
+
+    LOOP AT lt_entities INTO DATA(ls_entity).
+      TRY.
+          " Get Instance from system helper
+          DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+          " Get the ECC on-premise destination
+          DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+          lt_fieldvalues = VALUE #( ( fieldname = 'FIELD1' fieldvalue = ls_entity-field1 fieldposition = 1 )
+                                    ( fieldname = 'FIELD2' fieldvalue = ls_entity-field2 fieldposition = 2 )
+                                    ( fieldname = 'FIELD3' fieldvalue = ls_entity-field3 fieldposition = 3 )
+                                    ( fieldname = 'FIELD4' fieldvalue = ls_entity-field4 fieldposition = 4 )
+                                    ( fieldname = 'FIELD5' fieldvalue = ls_entity-field5 fieldposition = 5 )
+                                    ( fieldname = 'FIELD6' fieldvalue = ls_entity-field6 fieldposition = 6 ) ).
+
+          CALL FUNCTION 'Z_BE_XA_UPLD_UPDATE_JOB' DESTINATION lv_destination
+            EXPORTING
+              iv_scenario    = ls_entity-scenario
+              iv_version     = ls_entity-Version
+              iv_document    = ls_entity-content
+              iv_fileid      = ls_entity-AttachmentId
+              iv_filename    = ls_entity-filename
+            IMPORTING
+              ev_jobid       = new_jobid
+            TABLES
+              it_fieldvalues = lt_fieldvalues
+              et_return      = lt_messages.
+
+          IF lines( lt_messages ) NE 0.
+*            failed-uploadfiles = VALUE #( BASE failed-uploadfiles ( %cid = ls_key-%cid_ref
+*                                                                    %key-AttachmentId = ls_entity-AttachmentId ) ).
+*
+*            LOOP AT lt_messages INTO DATA(ls_message).
+*              reported-uploadfiles = VALUE #( BASE reported-uploadfiles (
+*                        %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error
+*                               text = ls_message-message )
+*                        %cid = ls_key-%cid_ref
+*                        %key-AttachmentId = ls_entity-AttachmentId ) ).
+*
+*            ENDLOOP.
+          ELSE.
+
+            MODIFY ENTITIES OF zi_xa_upload_files IN LOCAL MODE
+            ENTITY UploadFiles
+            UPDATE FIELDS ( JobId
+             ) WITH VALUE #(  ( AttachmentId = ls_entity-AttachmentId
+                                %data = VALUE #( AttachmentId = ls_entity-AttachmentId
+                                                 JobId        = new_jobid ) ) ).
+*              DELETE FROM VALUE #( ( CORRESPONDING #(  ls_key ) ) )
+*              REPORTED DATA(lt_reported)
+*              FAILED DATA(lt_failed).
+
+*              IF lt_failed IS NOT INITIAL.
+*                failed-uploadfiles = lt_failed-uploadfiles.
+*                reported-uploadfiles = lt_reported-uploadfiles.
+*              ENDIF.
+
+          ENDIF.
+        CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+      ENDTRY.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD determineAdmin.
+
+    READ ENTITIES OF ZI_XA_Upload_files IN LOCAL MODE
+            ENTITY UploadFiles
+            ALL FIELDS  WITH CORRESPONDING #( keys )
+            RESULT DATA(lt_entities).
+
+    LOOP AT lt_entities INTO DATA(ls_entity).
+
+      MODIFY ENTITIES OF ZI_XA_Upload_Files IN LOCAL MODE
+              ENTITY UploadFiles
+              UPDATE FIELDS ( CreatedAt CreatedBy
+               ) WITH VALUE #(  ( AttachmentId = ls_entity-AttachmentId
+                                  %data = VALUE #( AttachmentId = ls_entity-AttachmentId
+                                                   CreatedAt    = cl_abap_context_info=>get_system_date(  )
+                                                   CreatedBy    = sy-uname ) ) ).
+
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+  METHOD startJob.
+
+    DATA: lt_messages   TYPE TABLE OF bapiret2.
+
+    READ ENTITIES OF zi_xa_upload_files IN LOCAL MODE
+          ENTITY UploadFiles
+          ALL FIELDS  WITH CORRESPONDING #( keys )
+          RESULT DATA(lt_entities).
+
+    LOOP AT lt_entities INTO DATA(ls_entity).
+      TRY.
+          " Get Instance from system helper
+          DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+          " Get the ECC on-premise destination
+          DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+          CALL FUNCTION 'Z_BE_XA_UPLD_START_JOB' DESTINATION lv_destination
+            EXPORTING
+              iv_jobid  = ls_entity-JobId
+            TABLES
+              et_return = lt_messages.
+
+          IF lines( lt_messages ) NE 0.
+*              failed-uploadfiles = VALUE #( BASE failed-uploadfiles ( %cid = ls_key-%cid_ref
+*                                                                      %key-AttachmentId = ls_entity-AttachmentId ) ).
+*
+*              LOOP AT lt_messages INTO DATA(ls_message).
+*                reported-uploadfiles = VALUE #( BASE reported-uploadfiles (
+*                          %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error
+*                                 text = ls_message-message )
+*                          %cid = ls_key-%cid_ref
+*                          %key-AttachmentId = ls_entity-AttachmentId ) ).
+*
+*              ENDLOOP.
+          ELSE.
+
+*              MODIFY ENTITIES OF zi_xa_upload_files IN LOCAL MODE
+*              ENTITY UploadFiles
+*              DELETE FROM VALUE #( ( CORRESPONDING #(  ls_key ) ) )
+*              REPORTED DATA(lt_reported)
+*              FAILED DATA(lt_failed).
+*
+*              IF lt_failed IS NOT INITIAL.
+*                failed-uploadfiles = lt_failed-uploadfiles.
+*                reported-uploadfiles = lt_reported-uploadfiles.
+*              ENDIF.
+
+          ENDIF.
+        CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+      ENDTRY.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD setDeleted.
+
+    DATA: lt_messages   TYPE TABLE OF bapiret2.
+
+    LOOP AT keys INTO DATA(ls_key).
+
+*      READ ENTITIES OF zi_xa_upload_files IN LOCAL MODE
+*            ENTITY UploadFiles
+*            ALL FIELDS  WITH CORRESPONDING #( keys )
+*            RESULT DATA(lt_entities).
+*
+*      IF line_exists( lt_entities[ %key-AttachmentId  = ls_key-AttachmentId ] ).
+*        DATA(ls_entity) = lt_entities[ %key-AttachmentId  = ls_key-AttachmentId ].
+      TRY.
+          " Get Instance from system helper
+          DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+          " Get the ECC on-premise destination
+          DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+          CALL FUNCTION 'Z_BE_XA_UPLD_SET_DELETED' DESTINATION lv_destination
+            EXPORTING
+              iv_jobid  = ls_key-%param-JobId
+*             iv_jobid  = ls_entity-JobId
+            TABLES
+              et_return = lt_messages.
+
+        CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+      ENDTRY.
+*      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD getFile.
+
+    LOOP AT keys INTO DATA(ls_key).
+      DATA(lv_zip) = COND #( WHEN ls_key-%param-recordid = 'true' THEN abap_true ELSE abap_false ).
+      SPLIT ls_key-%param-value AT '/' INTO TABLE DATA(values).     "Until deep parameter for function is fixed
+      DATA(ls_output) = zcl_xa_upload_hdc_logic=>get_instance(  )->get_file( iv_jobid = ls_key-%param-jobid
+                                                                             iv_tableid = ls_key-%param-tableid
+                                                                             iv_colid = ls_key-%param-colid
+                                                                             iv_zip   = lv_zip
+                                                                             it_fieldvalues = VALUE zxa_upload_table_value_bapi_t( FOR ls_value IN values ( value = ls_value ) )
+                                                                            ).
+      APPEND INITIAL LINE TO result ASSIGNING FIELD-SYMBOL(<fs_result>).
+      <fs_result>-AttachmentId = keys[ 1 ]-AttachmentId.
+      <fs_result>-%param = ls_output.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD getTemplate.
+
+    LOOP AT keys INTO DATA(ls_key).
+      DATA(ls_output) = zcl_xa_upload_hdc_logic=>get_instance(  )->get_template( iv_scenario = ls_key-%param-scenario
+                                                                                 iv_version  = ls_key-%param-version
+                                                                                 iv_additional_info  = ls_key-%param-additional_info
+                                                                                ).
+      APPEND INITIAL LINE TO result ASSIGNING FIELD-SYMBOL(<fs_result>).
+      <fs_result>-AttachmentId = keys[ 1 ]-AttachmentId.
+      <fs_result>-%param = ls_output.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+ENDCLASS.

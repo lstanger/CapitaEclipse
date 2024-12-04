@@ -1,0 +1,35 @@
+@EndUserText.label: 'Mass Upload Files'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_ATTACHMENTS'
+@Search.searchable: true
+
+@UI.headerInfo: {
+  typeName: 'Mass Upload File',
+  typeNamePlural: 'Mass Upload Files',
+  title: {
+    type: #STANDARD, value: 'FileName'
+  }
+}
+
+define custom entity ZCE_XA_upload_files  {
+    key AttachmentId: abap.char(70);
+    ExternalId       :  abap.char(40); 
+    @EndUserText.label: 'File'
+    @Semantics.largeObject:{
+        mimeType: 'MimeType',
+        fileName: 'FileName',
+        contentDispositionPreference: #INLINE
+    }
+    Content: zxa_attachment_content;
+    @Semantics.mimeType: true
+    MimeType: abap.char(128);
+    @Search.defaultSearchElement: true
+    FileName: abap.char(200);
+    FileSize: abap.int4;
+    CreatedBy: syuname;
+    CreatedAt: sydate;
+    ExternalType: abap.char(10); 
+}
+
+
+
+ 
