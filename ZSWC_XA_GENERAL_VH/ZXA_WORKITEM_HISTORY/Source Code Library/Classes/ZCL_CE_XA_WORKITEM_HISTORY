@@ -1,0 +1,196 @@
+CLASS zcl_ce_xa_workitem_history DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_WORKITEM_HISTORY IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+
+    DATA: lv_number_of_records   TYPE i,
+          lv_records_int8        TYPE int8,
+          lt_workitem_history    TYPE STANDARD TABLE OF zxa_workitem_history_bapi,
+          ls_workitem_history_ce TYPE zce_xa_workitem_history,
+          lt_workitem_history_ce TYPE TABLE OF zce_xa_workitem_history,
+          lv_instance_id         TYPE zce_xa_workitem_history-instance,
+          lv_type_id             TYPE zce_xa_workitem_history-typeid,
+          lv_cat_id              TYPE zce_xa_workitem_history-catid,
+          lv_zdate               TYPE zce_xa_workitem_history-zdate,
+          lv_ztime               TYPE zce_xa_workitem_history-ztime,
+          lt_bapi_filter         TYPE zxa_sys_selopt_t,
+          lt_email_to_msuser     TYPE TABLE OF zcl_xa_msgraph_util=>ts_email_user.
+
+    TRY.
+
+        " Get Instance from system helper
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+        " Map the OData request parameters to the FM importing/table objects
+        lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                IMPORTING es_pagination = DATA(ls_pagination)
+                                                          et_filters = lt_bapi_filter
+                                                          et_parameters = DATA(lt_parameters)
+                                                          et_requested_elements = DATA(lt_requested_elements)
+                                                          et_sort = DATA(lt_sort)
+                                                          ev_search_expression = DATA(lv_search_expression) ).
+
+        IF lt_bapi_filter IS NOT INITIAL.
+
+          READ TABLE lt_bapi_filter INTO DATA(ls_bapi_filter) INDEX 1.
+          IF sy-subrc EQ 0.
+
+            READ TABLE  ls_bapi_filter-single_select INTO DATA(ls_catid_filter) WITH KEY name = 'CATID'.
+            IF ls_catid_filter-range IS NOT INITIAL.
+              READ TABLE ls_catid_filter-range INTO DATA(ls_catid_range) INDEX 1.
+              IF sy-subrc EQ 0.
+                lv_cat_id = ls_catid_range-low.
+              ENDIF.
+            ELSE.
+              lv_cat_id = 'BO'.
+            ENDIF.
+
+            READ TABLE  ls_bapi_filter-single_select INTO DATA(ls_instance_filter) WITH KEY name = 'INSTANCE'.
+            IF ls_instance_filter-range IS NOT INITIAL.
+              READ TABLE ls_instance_filter-range INTO DATA(ls_instance_range) INDEX 1.
+              IF sy-subrc EQ 0.
+                lv_instance_id = ls_instance_range-low.
+              ENDIF.
+            ENDIF.
+
+            READ TABLE ls_bapi_filter-single_select INTO DATA(ls_typeid_filter) WITH KEY name = 'TYPEID'.
+            IF ls_typeid_filter-range IS NOT INITIAL.
+              READ TABLE ls_typeid_filter-range INTO DATA(ls_typeid_range) INDEX 1.
+              IF sy-subrc EQ 0.
+                lv_type_id = ls_typeid_range-low.
+              ENDIF.
+
+            ENDIF.
+
+            READ TABLE ls_bapi_filter-single_select INTO DATA(ls_zdate_filter) WITH KEY name = 'ZDATE'.
+            IF ls_zdate_filter-range IS NOT INITIAL.
+              READ TABLE ls_zdate_filter-range INTO DATA(ls_zdate_range) INDEX 1.
+              IF sy-subrc EQ 0.
+                lv_zdate = ls_zdate_range-low.
+              ENDIF.
+
+            ENDIF.
+
+            READ TABLE ls_bapi_filter-single_select INTO DATA(ls_ztime_filter) WITH KEY name = 'ZTIME'.
+            IF ls_ztime_filter-range IS NOT INITIAL.
+              READ TABLE ls_ztime_filter-range INTO DATA(ls_ztime_range) INDEX 1.
+              IF sy-subrc EQ 0.
+                lv_ztime = ls_ztime_range-low.
+              ENDIF.
+
+            ENDIF.
+          ENDIF.
+        ENDIF.
+
+        IF lv_instance_id IS INITIAL OR
+           lv_type_id IS INITIAL OR
+           lv_cat_id IS INITIAL.
+          IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+            io_response->set_total_number_of_records( CONV int8( lines( lt_workitem_history_ce ) ) ).
+          ENDIF.
+          io_response->set_data( lt_workitem_history_ce ).
+          RETURN.
+        ENDIF.
+
+        " Call RFC function module to get purchase order account assignments
+        CALL FUNCTION 'Z_BE_XA_GET_WORKITEM_HISTORY' DESTINATION lv_destination
+          EXPORTING
+            iv_instid             = lv_instance_id
+            iv_typeid             = lv_type_id
+            iv_catid              = lv_cat_id
+          TABLES
+            et_workhist           = lt_workitem_history
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+
+
+
+        CASE sy-subrc.
+          WHEN 0.
+
+            IF io_request->is_data_requested(  ).
+              LOOP AT lt_workitem_history INTO DATA(ls_workitem_history).
+                CLEAR: ls_workitem_history_ce.
+
+                " Single record read
+                IF lv_ztime IS NOT INITIAL AND lv_zdate IS NOT INITIAL.
+                  CHECK ls_workitem_history-ztime EQ lv_ztime AND ls_workitem_history-zdate EQ lv_zdate.
+                ENDIF.
+
+                ls_workitem_history_ce = CORRESPONDING #( ls_workitem_history ).
+                ls_workitem_history_ce-catid = lv_cat_id.
+                ls_workitem_history_ce-typeid = lv_type_id.
+                ls_workitem_history_ce-instance = lv_instance_id.
+                ls_workitem_history_ce-zuser = ls_workitem_history-objid.
+                ls_workitem_history_ce-zname = ls_workitem_history-objdesc.
+                IF ls_workitem_history_ce-zemail IS NOT INITIAL.
+                  TRANSLATE ls_workitem_history_ce-zemail TO LOWER CASE.
+                  " Get ms azure user id
+                  IF NOT line_exists( lt_email_to_msuser[ email = ls_workitem_history_ce-zemail ] ).
+                    zcl_xa_msgraph_util=>get_ms_id( EXPORTING iv_email = ls_workitem_history_ce-zemail
+                                    IMPORTING ev_ms_user = ls_workitem_history_ce-msuser ).
+
+                    lt_email_to_msuser = VALUE #( BASE lt_email_to_msuser (  email = ls_workitem_history_ce-zemail
+                                                                             user  = ls_workitem_history_ce-msuser ) ).
+                  ELSE.
+                    ls_workitem_history_ce-msuser =  lt_email_to_msuser[ email = ls_workitem_history_ce-zemail ]-user.
+                  ENDIF.
+                ENDIF.
+                APPEND ls_workitem_history_ce TO lt_workitem_history_ce.
+              ENDLOOP.
+              io_response->set_data( lt_workitem_history_ce ).
+            ENDIF.
+
+            IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+              io_response->set_total_number_of_records( CONV int8( lines( lt_workitem_history_ce ) ) ).
+            ENDIF.
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = 'Z_BE_XA_GET_WORKITEM_HISTORY'.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = 'Z_BE_XA_GET_WORKITEM_HISTORY'.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = 'Z_BE_XA_GET_WORKITEM_HISTORY'.
+        ENDCASE.
+
+
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+ENDCLASS.

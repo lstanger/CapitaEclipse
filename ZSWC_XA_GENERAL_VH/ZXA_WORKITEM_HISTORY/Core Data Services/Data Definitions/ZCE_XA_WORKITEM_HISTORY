@@ -1,0 +1,27 @@
+@EndUserText.label: 'Work Item History'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_XA_WORKITEM_HISTORY'
+define custom entity ZCE_XA_WORKITEM_HISTORY
+{
+  key instance     : abap.char(70);
+  key typeid       : abap.char(32);
+  key catid        : abap.char(2);  
+  key zdate        : abap.dats;
+  key ztime        : abap.tims;  
+  otype        : abap.char(2);
+  zdescription : abap.char(50);
+  zuser        : abap.char(30);
+  zname        : abap.char(80);
+  ztimestamp   : timestampl;
+  zemail       : abap.char(241);
+  msuser       : abap.char(50);
+  event_type   : abap.char(1);
+  snote        : abap.char(30);
+  note         : abap.char(255);
+  
+  @ObjectModel.filter.enabled: false
+  _Substitutes            : association [0..*] to ZCE_XA_User_Substitutes on  _Substitutes.ApprUser   = $projection.zuser
+                                                                          and _Substitutes.ApprUserType = $projection.otype;
+      
+      
+
+}
