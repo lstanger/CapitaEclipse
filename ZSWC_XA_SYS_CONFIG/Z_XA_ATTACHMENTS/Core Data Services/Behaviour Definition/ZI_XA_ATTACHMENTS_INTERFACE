@@ -1,0 +1,14 @@
+interface;
+
+define behavior for ZI_XA_ATTACHMENTS_INTERFACE alias Attachments
+{
+  use create;
+  use update;
+  use delete;
+
+  use action moveDraftToEcc;
+  use action moveDraftToActive;
+  use action discardAllDraftAttachments;
+  use action activateAllDraftAttachments;
+  use action deleteEccAttachment;
+}

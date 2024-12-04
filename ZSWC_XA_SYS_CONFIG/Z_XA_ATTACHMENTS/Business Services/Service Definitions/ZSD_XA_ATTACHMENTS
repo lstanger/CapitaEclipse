@@ -1,0 +1,5 @@
+@EndUserText.label: 'Attachments Service Definition'
+define service ZSD_XA_ATTACHMENTS {
+  expose ZCE_XA_Attachments as Attachments;
+  expose ZC_XA_Attachments as AttachmentsExt;
+}

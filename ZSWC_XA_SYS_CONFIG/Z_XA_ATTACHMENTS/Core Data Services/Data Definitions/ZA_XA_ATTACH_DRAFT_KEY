@@ -1,0 +1,7 @@
+@EndUserText.label: 'Abstract Entity Parameter for remove draft attachments'
+@Metadata.allowExtensions: true
+
+define abstract entity ZA_XA_ATTACH_DRAFT_KEY{    
+     
+    DraftId: sdraft_uuid; 
+}

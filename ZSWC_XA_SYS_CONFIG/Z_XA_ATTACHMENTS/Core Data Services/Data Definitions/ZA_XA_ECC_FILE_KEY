@@ -1,0 +1,8 @@
+@EndUserText.label: 'Abstract Entity Parameter for remove ECC attachment'
+@Metadata.allowExtensions: true
+
+define abstract entity ZA_XA_ECC_FILE_KEY{    
+    FileId: zxa_ecc_file_id; 
+    ExternalId: zxa_external_att_id;
+    ExternalType: zxa_external_att_type;
+}

@@ -1,0 +1,76 @@
+CLASS zcl_ce_xa_attachments DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_XA_ATTACHMENTS IMPLEMENTATION.
+
+
+ METHOD if_rap_query_provider~select.
+
+    DATA: lv_number_of_records           TYPE i,
+          lv_records_int8                TYPE int8,
+          lt_attachachments              TYPE zxa_att_bapi_t,
+          ls_attachments_ce              TYPE  ZCE_XA_Attachments,
+          lt_attachments_ce              TYPE TABLE OF ZCE_XA_Attachments,
+          lv_external_id                 type zxa_external_att_id,
+          lv_external_type               type zxa_external_att_type,
+          lv_file_read                   type abap_boolean VALUE abap_false.
+
+*    TRY.
+
+*        " Get Instance from system helper
+*        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+*
+*        " Get the ECC on-premise destination
+*        DATA(lv_destination_new) = lo_instance->get_sap_onpremise_destination(  ).
+*
+*        " Map the OData request parameters to the FM importing/table objects
+*        lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+*                                                IMPORTING es_pagination = DATA(ls_pagination)
+*                                                          et_filters = DATA(lt_filter)
+*                                                          et_parameters = DATA(lt_parameters)
+*                                                          et_requested_elements = DATA(lt_requested_elements)
+*                                                          et_sort = DATA(lt_sort)
+*                                                          ev_search_expression = DATA(lv_search_expression) ).
+*
+*        loop at lt_filter assigning field-symbol(<fs_filter>).
+*          loop at <fs_filter>-single_select assigning field-symbol(<fs_single_select>).
+*            if <fs_single_select>-range is not initial.
+*                case <fs_single_select>-name.
+*                   when 'EXTERNALID'.
+*                      lv_external_id  = <fs_single_select>-range[ 1 ]-low.
+*                   when 'ATTACHMENTID'.
+*                      lv_file_read = abap_true.
+*                   when 'EXTERNALTYPE'.
+*                      lv_external_type = <fs_single_select>-range[ 1 ]-low.
+*                endcase.
+*            endif.
+*          endloop.
+*        endloop.
+
+        data(lo_attachments_util) = zcl_xa_attachments_util=>get_instance( ).
+
+        lo_attachments_util->get_ecc_attachments( exporting io_request = io_request
+                                                  importing et_attachments = lt_attachments_ce
+                                                            ev_num_of_rec  = data(lv_num_of_rec) ).
+
+        IF io_request->is_data_requested(  ).
+            io_response->set_data( lt_attachments_ce ).
+        ENDIF.
+
+        IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+          io_response->set_total_number_of_records( lv_num_of_rec ).
+        ENDIF.
+
+
+ENDMETHOD.
+ENDCLASS.

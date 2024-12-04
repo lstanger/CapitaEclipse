@@ -1,0 +1,41 @@
+managed implementation in class zbp_i_xa_attachments unique;
+strict ( 1 );
+
+
+
+define behavior for ZI_XA_Attachments alias Attachments
+persistent table zxa_attachments
+// draft table zxa_attachmentsd
+lock master
+
+early numbering
+
+authorization master ( instance )
+
+{
+  create;
+  update;
+  delete;
+  field ( readonly : update ) AttachmentId;
+  field ( readonly ) CreatedAt, CreatedBy;
+  determination determineAdmin on modify { create; }
+
+  // ********* Used for draft and non-draft interactions (key: attachment id) ********** //
+
+  // Saving one specific attachment
+  action moveDraftToEcc parameter ZA_XA_EXTERNAL_KEY;
+  // Updating one specific attachment to active version
+  action moveDraftToActive parameter ZA_XA_EXTERNAL_KEY;
+
+  //static function scanAttachmentContent parameter zxa_scan_file_content_s result[1] zxa_scan_file_cont_res_s;
+  // ********* Used for draft based interactions (key: draft id) ********** //
+
+  // Discard all the draft attachments (used from external calls) based on draft id
+  static action discardAllDraftAttachments parameter ZA_XA_ATTACH_DRAFT_KEY;
+  // Move all the draft attachments (used from external calls) based on draft id
+  static action activateAllDraftAttachments parameter ZA_XA_ATTACH_ACTIV_KEY;
+
+  // Handle deletion of ECC attachment (skipping ADC tables)
+  static action deleteEccAttachment parameter ZA_XA_ECC_FILE_KEY;
+
+}

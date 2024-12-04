@@ -1,0 +1,31 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Attachments'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType:{
+    serviceQuality: #X,
+    sizeCategory: #S,
+    dataClass: #MIXED
+}
+define root view entity ZI_XA_ATTACHMENTS_INTERFACE 
+provider contract transactional_interface
+  as projection on  ZI_XA_Attachments {
+    key AttachmentId,
+    DraftId,
+    IsDraft,
+    ExternalId,
+    ExternalType,
+    @EndUserText.label: 'File'
+    @Semantics.largeObject:{
+        mimeType: 'MimeType',
+        fileName: 'FileName',
+        contentDispositionPreference: #INLINE
+    }
+    Content,
+    @Semantics.mimeType: true
+    MimeType,
+    FileName,
+    FileSize,
+    CreatedBy,
+    CreatedAt
+}

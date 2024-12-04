@@ -1,0 +1,267 @@
+CLASS lhc_Attachments DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR Attachments RESULT result.
+    METHODS deleteeccattachment FOR MODIFY
+      IMPORTING keys FOR ACTION attachments~deleteeccattachment.
+
+    METHODS movedrafttoecc FOR MODIFY
+      IMPORTING keys FOR ACTION attachments~movedrafttoecc.
+    METHODS determineadmin FOR DETERMINE ON MODIFY
+      IMPORTING keys FOR attachments~determineadmin.
+    METHODS movedrafttoactive FOR MODIFY
+      IMPORTING keys FOR ACTION attachments~movedrafttoactive.
+    METHODS discardalldraftattachments FOR MODIFY
+      IMPORTING keys FOR ACTION attachments~discardalldraftattachments.
+    METHODS activateAllDraftAttachments FOR MODIFY
+      IMPORTING keys FOR ACTION attachments~activateAllDraftAttachments.
+    "METHODS scanAttachmentContent FOR READ
+    "  IMPORTING keys FOR FUNCTION Attachments~scanAttachmentContent RESULT result.
+
+
+    METHODS earlyNumbering_Create FOR NUMBERING
+      IMPORTING entities FOR CREATE Attachments.
+
+ENDCLASS.
+
+CLASS lhc_Attachments IMPLEMENTATION.
+
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD earlynumbering_create.
+
+    LOOP AT entities INTO DATA(ls_entity).
+      IF ls_entity-attachmentid IS NOT INITIAL.
+        APPEND CORRESPONDING #( ls_entity ) TO mapped-attachments.
+      ELSE.
+        TRY.
+            DATA(lv_new_id) = cl_system_uuid=>create_uuid_x16_static( ).
+            ls_entity-%key-AttachmentId = lv_new_id.
+            APPEND VALUE #( %cid  = ls_entity-%cid
+                            "%tky is not available since we are in create
+                            %key  = ls_entity-%key
+                            attachmentid = lv_new_id
+                        ) TO mapped-attachments.
+          CATCH cx_uuid_error INTO DATA(lx_exc).
+        ENDTRY.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD deleteEccAttachment.
+
+
+    LOOP AT keys INTO DATA(ls_key).
+      TRY.
+          " Get Instance from system helper
+          DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+          " Get the ECC on-premise destination
+          DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+          CALL FUNCTION 'Z_BE_XA_DELETE_ATTACHMENTS' DESTINATION lv_destination
+            EXPORTING
+              iv_objkey       = ls_key-%param-fileid
+              iv_externalid   = ls_key-%param-ExternalId
+              iv_externaltype = ls_key-%param-ExternalType.
+
+        CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+      ENDTRY.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD moveDraftToEcc.
+
+    DATA: lt_messages TYPE TABLE OF bapiret2.
+
+    LOOP AT keys INTO DATA(ls_key).
+
+      READ ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+            ENTITY Attachments
+            ALL FIELDS  WITH CORRESPONDING #( keys )
+            RESULT DATA(lt_entities).
+
+      IF line_exists( lt_entities[ %key-AttachmentId  = ls_key-AttachmentId ] ).
+        DATA(ls_entity) = lt_entities[ %key-AttachmentId  = ls_key-AttachmentId ].
+        TRY.
+            " Get Instance from system helper
+            DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+            " Get the ECC on-premise destination
+            DATA(lv_destination) = lo_instance->get_sap_onpremise_destination(  ).
+
+            CALL FUNCTION 'Z_BE_XA_CREATE_ATTACHMENTS' DESTINATION lv_destination
+              EXPORTING
+                iv_filecontent    = ls_entity-content
+                iv_object_type    = ls_entity-externaltype
+                iv_object_id      = COND zxa_external_att_id( WHEN ls_entity-externalid IS NOT INITIAL THEN ls_entity-externalid ELSE ls_key-%param-ExternalId )
+                iv_mimetype       = ls_entity-mimetype
+                iv_filename       = ls_entity-filename
+                iv_initial_upload = ls_key-%param-InitialUpload
+              TABLES
+                et_return         = lt_messages.
+
+            IF lines( lt_messages ) NE 0.
+              failed-attachments = VALUE #( BASE failed-attachments ( %cid = ls_key-%cid_ref
+                                                                      %key-AttachmentId = ls_entity-AttachmentId ) ).
+
+              LOOP AT lt_messages INTO DATA(ls_message).
+                reported-attachments = VALUE #( BASE reported-attachments (
+                          %msg = new_message_with_text( severity = if_abap_behv_message=>severity-error
+                                 text = ls_message-message )
+                          %cid = ls_key-%cid_ref
+                          %key-AttachmentId = ls_entity-AttachmentId ) ).
+
+              ENDLOOP.
+            ELSE.
+
+              MODIFY ENTITIES OF ZI_XA_Attachments  IN LOCAL MODE
+              ENTITY Attachments
+              DELETE FROM VALUE #( ( %key = ls_entity-%key AttachmentId = ls_entity-AttachmentId  ) )
+              REPORTED DATA(lt_reported)
+              FAILED DATA(lt_failed).
+
+              IF lt_failed IS NOT INITIAL.
+                failed-attachments = lt_failed-attachments.
+                reported-attachments = lt_reported-attachments.
+              ENDIF.
+
+
+            ENDIF.
+          CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        ENDTRY.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD determineAdmin.
+
+    READ ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+            ENTITY Attachments
+            ALL FIELDS  WITH CORRESPONDING #( keys )
+            RESULT DATA(lt_entities).
+
+    LOOP AT lt_entities INTO DATA(ls_entity).
+
+      MODIFY ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+              ENTITY Attachments
+              UPDATE FIELDS ( CreatedAt CreatedBy
+               ) WITH VALUE #(  ( AttachmentId = ls_entity-AttachmentId
+                                  %data = VALUE #( AttachmentId = ls_entity-AttachmentId
+                                                   CreatedAt    = cl_abap_context_info=>get_system_date(  )
+                                                   CreatedBy    = sy-uname ) ) ).
+
+    ENDLOOP.
+
+
+  ENDMETHOD.
+
+  METHOD moveDraftToActive.
+
+
+    LOOP AT keys INTO DATA(ls_key).
+      READ ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+              ENTITY Attachments
+              ALL FIELDS  WITH CORRESPONDING #( keys )
+              RESULT DATA(lt_entities).
+
+      LOOP AT lt_entities INTO DATA(ls_entity).
+
+        MODIFY ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+                ENTITY Attachments
+                UPDATE FIELDS ( externalid draftid isdraft
+                 ) WITH VALUE #(  ( AttachmentId = ls_entity-AttachmentId
+                                    %data = VALUE #( isdraft = abap_false
+                                                     draftid    = ''
+                                                     ExternalId    = COND #( WHEN ls_entity-ExternalId IS NOT INITIAL THEN ls_entity-externalid ELSE
+                                                                                  ls_key-%param-externalid ) ) ) ).
+
+      ENDLOOP.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD discardAllDraftAttachments.
+
+    LOOP AT keys INTO DATA(ls_key).
+
+      SELECT attachmentid FROM zxa_attachments WHERE draftid = @ls_key-%param-DraftId
+                                               AND   isdraft = @abap_true
+                                               INTO TABLE @DATA(lt_draft_attachments).
+
+      LOOP AT lt_draft_attachments INTO DATA(ls_draft_attachment).
+
+        MODIFY ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+            ENTITY Attachments
+            DELETE FROM VALUE #( ( AttachmentId = ls_draft_attachment-attachmentid  ) )
+            REPORTED DATA(lt_reported)
+            FAILED DATA(lt_failed).
+
+        APPEND LINES OF lt_reported-attachments TO reported-attachments.
+        APPEND LINES OF lt_failed-attachments TO failed-attachments.
+        CLEAR: lt_reported, lt_failed.
+
+      ENDLOOP.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD activateAllDraftAttachments.
+
+    LOOP AT keys INTO DATA(ls_key).
+
+      SELECT FROM zxa_attachments FIELDS attachmentid, draftid  WHERE draftid = @ls_key-%param-DraftId
+                                               AND   isdraft = @abap_true
+                                               INTO TABLE @DATA(lt_draft_attachments).
+
+      LOOP AT lt_draft_attachments INTO DATA(ls_draft_attachment).
+
+        IF ls_key-%param-IsEccUpload EQ abap_true.
+          MODIFY ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+            ENTITY Attachments
+            EXECUTE moveDraftToEcc FROM VALUE #( ( %param-ExternalId = ls_key-%param-ExternalId
+                                                   %param-InitialUpload = abap_true
+                                                   AttachmentId = ls_draft_attachment-attachmentid ) )
+            REPORTED DATA(lt_reported)
+            FAILED DATA(lt_failed).
+        ELSE.
+          MODIFY ENTITIES OF ZI_XA_Attachments IN LOCAL MODE
+            ENTITY Attachments
+            EXECUTE moveDraftToActive FROM VALUE #( ( %param-ExternalId = ls_key-%param-ExternalId
+                                                      AttachmentId = ls_draft_attachment-attachmentid ) )
+            REPORTED lt_reported
+            FAILED lt_failed.
+        ENDIF.
+        APPEND LINES OF lt_reported-attachments TO reported-attachments.
+        APPEND LINES OF lt_failed-attachments TO failed-attachments.
+        CLEAR: lt_reported, lt_failed.
+
+      ENDLOOP.
+
+      IF failed-attachments IS INITIAL.
+        " To be sure that activated drafts are removed - when activate drafts action is called from UI,
+        " they are cleaned up correctly in moveDraftToEcc, but when called from 'cleanup' method of process
+        " BO (like projects), for some reason it doesn't clean it up, despite returning no error
+        "DELETE FROM zxa_attachments where draftid = @ls_key-%param-DraftId.
+        LOOP AT lt_draft_attachments INTO ls_draft_attachment.
+          DELETE FROM zxa_attachments WHERE attachmentid = @ls_draft_attachment-attachmentid.
+        ENDLOOP.
+      ELSE.
+        EXIT.
+      ENDIF.
+
+    ENDLOOP.
+  ENDMETHOD.
+
+
+
+ENDCLASS.

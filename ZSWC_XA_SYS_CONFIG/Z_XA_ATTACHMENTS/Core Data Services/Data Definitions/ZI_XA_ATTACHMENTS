@@ -1,0 +1,31 @@
+@AbapCatalog.viewEnhancementCategory: [#NONE]
+@AccessControl.authorizationCheck: #NOT_REQUIRED
+@EndUserText.label: 'Attachments storage'
+@Metadata.ignorePropagatedAnnotations: true
+@ObjectModel.usageType:{
+    serviceQuality: #X,
+    sizeCategory: #S,
+    dataClass: #MIXED
+}
+define root view entity ZI_XA_Attachments as select from zxa_attachments {
+    key attachmentid as AttachmentId,
+    
+    externalid as ExternalId,
+    draftid as DraftId,
+    isdraft as  IsDraft,
+    externaltype as ExternalType,
+    @EndUserText.label: 'File'
+    @Semantics.largeObject:{
+        mimeType: 'MimeType',
+        fileName: 'FileName',
+        contentDispositionPreference: #INLINE
+    }
+    content as Content,
+    @Semantics.mimeType: true
+    mimetype as MimeType,
+    filename as FileName,
+    filesize as FileSize,
+    createdby as CreatedBy,
+    createdat as CreatedAt
+    
+}

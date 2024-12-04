@@ -1,0 +1,8 @@
+@EndUserText.label: 'External data update structure'
+@Metadata.allowExtensions: true
+
+define abstract entity ZA_XA_EXTERNAL_DATA{    
+    DraftId: sdraft_uuid; 
+    ExternalType     : zxa_external_att_type;
+    ExternalId: abap.char(40); 
+}

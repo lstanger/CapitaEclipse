@@ -1,0 +1,21 @@
+@EndUserText.label : 'Attachments storage'
+@AbapCatalog.enhancement.category : #NOT_EXTENSIBLE
+@AbapCatalog.tableCategory : #TRANSPARENT
+@AbapCatalog.deliveryClass : #A
+@AbapCatalog.dataMaintenance : #RESTRICTED
+define table zxa_attachments {
+
+  key client       : abap.clnt not null;
+  key attachmentid : zxa_attachment_id not null;
+  externalid       : zxa_external_att_id;
+  draftid          : sdraft_uuid;
+  isdraft          : abap_boolean;
+  externaltype     : zxa_external_att_type;
+  content          : zxa_attachment_content;
+  mimetype         : abap.char(128);
+  filename         : abap.char(200);
+  filesize         : abap.int4;
+  createdby        : syuname;
+  createdat        : sydate;
+
+}
