@@ -1,0 +1,57 @@
+unmanaged implementation in class zbp_ce_ps_cats_week unique;
+strict ( 1 ); //Uncomment this line in order to enable strict mode 2. The strict mode has two variants (strict(1), strict(2)) and is prerequisite to be future proof regarding syntax and to be able to release your BO.
+
+define behavior for ZCE_PS_CATS_WEEK  alias Week
+//late numbering
+lock master
+authorization master ( instance )
+//etag master <field_name>
+{
+  create;
+  update;
+  delete;
+  field ( readonly:update ) StartDate, EmployeeNumber;
+//  association _AssignmentWeeksComp { create; }
+  association _AssignmentWeeks { create; }
+  association _Days { create; }
+//  association _AssignmentDaysComp { create; }
+}
+
+define behavior for ZCE_PS_CATS_ASSIGNMENT_WEEK  alias AssignmentWeek
+//late numbering
+//lock master
+lock dependent by _Header
+authorization dependent by _Header
+//etag master WeekChangedOn //15/4/2024 - don't allow conflicting changes
+{
+  create;
+  update;
+  delete;
+  field ( readonly:update ) Counter, StartDate, EmployeeNumber, ProjectKey, WBSKey, ActivityKey, TypeKey, IsWorklist, Network, AbsAttType;
+  association _Header;
+  association _Monday { create; }
+  association _Tuesday { create; }
+  association _Wednesday { create; }
+  association _Thursday { create; }
+  association _Friday { create; }
+  association _Saturday { create; }
+  association _Sunday { create; }
+  association _AssignmentDays { create; }
+
+  }
+
+define behavior for ZCE_PS_CATS_ASSIGNMENT_DAY  alias AssignmentDay
+//late numbering
+lock dependent by _Week
+authorization dependent by _Week
+//authorization dependent by _Header
+//etag master WeekChangedOn //15/4/2024 - don't allow conflicting changes
+{
+  create;
+  update;
+  delete;
+  field ( readonly:update ) WeekCounter, WeekStartDate, EmployeeNumber, ProjectKey, WBSKey, ActivityKey, TypeKey, ZDate, Network, Counter, AbsAttType;
+//  association _Week;
+  association _AssignmentWeek;
+  association _Week;
+}

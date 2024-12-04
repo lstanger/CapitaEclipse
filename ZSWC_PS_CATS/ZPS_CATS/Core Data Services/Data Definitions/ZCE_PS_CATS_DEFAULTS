@@ -1,0 +1,71 @@
+@EndUserText.label: 'Defaults'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_DEFAULTS'
+@Search.searchable: true
+
+@OData.entitySet.name: 'Defaults'
+@OData.entityType.name: 'Default'
+
+@UI.headerInfo: {
+  typeName: 'Default',
+  typeNamePlural: 'Defaults',
+  title: {
+    type: #STANDARD, value: 'EmployeeNumber'
+  }
+}
+define root custom entity ZCE_PS_CATS_DEFAULTS
+{
+      @UI                     : {
+        selectionField        : [{position: 70}],
+        lineItem              : [{position: 70, importance: #HIGH }],
+        fieldGroup            : [{ qualifier: 'FurtherInfoData', position: 10 }]
+
+      }
+      @Search.defaultSearchElement: false
+      @Consumption.valueHelpDefinition: [{
+                entity        : {   name: 'ZCE_XA_Employee',
+                            element: 'EmployeeNumber' }}]
+      @ObjectModel.foreignKey.association: '_Employee'
+      @EndUserText.label: 'Employee'
+  key EmployeeNumber : zxa_employee_number;
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Name'
+      DisplayName   : abap.char(40);
+      
+      @Search.defaultSearchElement: false
+      ActualEmployeeNumber : zxa_employee_number; 
+
+      @Search.defaultSearchElement: false
+      CompanyCode   : bukrs;
+      @Search.defaultSearchElement: false
+      CostCentre    : kostl;
+      @Search.defaultSearchElement: false
+      ActivityType  : abap.char(6);
+      
+      IsAdministrator : abap_boolean;
+      
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Position'
+      PositionId: zps_plans;//abap.numc(8);
+      @Search.defaultSearchElement: true
+      @EndUserText.label: 'Position'
+      PositionDescription: abap.char(36);
+      
+      HideCallReference: abap_boolean;
+      HideAdditionalInfo: abap_boolean;
+      IsMe: abap_boolean;
+      
+      Show2Decs: abap_boolean;
+      ShowMyDetails: abap_boolean;
+      
+      ErrorMessage: abap.char(255);
+      
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true   
+      _Employee     : association [0..1] to ZCE_XA_Employee on _Employee.EmployeeNumber = $projection.EmployeeNumber;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _DataEntryProfile : association [0..1] to ZCE_PS_CATS_DATA_ENTRY_PROFILE on _DataEntryProfile.EmployeeNumber = $projection.EmployeeNumber;
+}

@@ -1,0 +1,21 @@
+@EndUserText.label: 'Types'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_TYPE'
+@Search.searchable: false
+
+@OData.entitySet.name: 'Types'
+@OData.entityType.name: 'Type'
+
+@UI.headerInfo: {
+  typeName: 'Type',
+  typeNamePlural: 'Types',
+  title: {
+    type: #STANDARD, value: 'Text'
+  }
+}
+
+define custom entity ZCE_PS_CATS_TYPE
+{
+  key TypeKey : abap.char(6);
+  key EmployeeNumber: zxa_employee_number; 
+  Text : abap.char(40); 
+}

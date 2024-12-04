@@ -1,0 +1,418 @@
+CLASS zcl_ps_cats_assignment_week DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES: ts_assignment_week  TYPE zce_ps_cats_assignment_week,
+           tt_assignment_weeks TYPE TABLE OF zce_ps_cats_assignment_week,
+           tt_wbs              TYPE TABLE OF zce_xa_wbs_elements.
+
+    CLASS-METHODS get_instance
+      RETURNING VALUE(ro_instance) TYPE REF TO zcl_ps_cats_assignment_week.
+
+    METHODS:
+      check_instance_count
+        RETURNING
+          VALUE(rv_count) TYPE i,
+
+      get_assignments_for_week
+        IMPORTING
+          io_request          TYPE REF TO if_rap_query_request OPTIONAL
+        EXPORTING
+          et_assignment_weeks TYPE tt_assignment_weeks
+          ev_count            TYPE i
+        RAISING
+          cx_rap_query_provider,
+
+      get_corresponding_tables
+        EXPORTING
+          et_assignment_weeks TYPE tt_assignment_weeks
+          et_assignment_days  TYPE zcl_ps_cats_assignment_day=>tt_assignment_days
+          et_assignment       TYPE zcl_ps_cats_assignment=>tt_assignments
+*          et_project          TYPE zcl_ps_cats_project_rfc=>tt_projects
+          et_wbs              TYPE tt_wbs
+          et_activity         TYPE zcl_ce_ps_cats_activity=>tt_activity
+          et_pm               TYPE zcl_ce_ps_cats_project_manager=>tt_pm,
+
+      load_data_for_week
+        IMPORTING
+          iv_destination_new TYPE rfcdest
+          iv_startdate       TYPE zce_ps_cats_assignment_week-startdate
+          iv_employeenumber  TYPE zxa_employee_number
+        RAISING
+          zxa_sys_rap_provider_exception,
+
+      load_worklist_for_week
+        IMPORTING
+          iv_destination_new TYPE rfcdest
+          iv_startdate       TYPE zce_ps_cats_assignment_week-startdate
+          iv_employeenumber  TYPE zxa_employee_number
+        RAISING
+          zxa_sys_rap_provider_exception,
+
+      set_assignment_search_results
+        IMPORTING
+          it_assignment TYPE zcl_ps_cats_assignment=>tt_assignments
+          it_wbs        TYPE tt_wbs
+          it_activity   TYPE zcl_ce_ps_cats_activity=>tt_activity
+          it_pm         TYPE zcl_ce_ps_cats_project_manager=>tt_pm,
+
+      build_empty_assignment_week
+        IMPORTING
+          iv_startdate         TYPE zce_ps_cats_assignment_week-startdate
+          iv_project           TYPE zce_ps_cats_assignment_week-projectkey OPTIONAL
+          iv_wbs               TYPE zce_ps_cats_assignment_week-wbskey OPTIONAL
+          iv_type              TYPE zce_ps_cats_assignment_week-typekey OPTIONAL
+          iv_activity          TYPE zce_ps_cats_assignment_week-activitykey OPTIONAL
+          iv_network           TYPE zce_ps_cats_assignment_week-network OPTIONAL
+          iv_employeenumber    TYPE zxa_employee_number
+          iv_is_absence        TYPE zce_ps_cats_assignment_week-isabsence OPTIONAL
+          iv_is_sch_correction TYPE zce_ps_cats_assignment_week-isschcorrection OPTIONAL.
+
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance     TYPE REF TO zcl_ps_cats_assignment_week.
+    DATA: gv_count            TYPE i VALUE 0,
+          gt_assignment_weeks TYPE TABLE OF zce_ps_cats_assignment_week,
+          gt_assignment_days  TYPE TABLE OF zce_ps_cats_assignment_day,
+          gt_assignment       TYPE TABLE OF zce_ps_cats_assignment,
+*          gt_project          TYPE TABLE OF zce_ps_cats_project,
+          gt_wbs              TYPE TABLE OF zce_xa_wbs_elements,
+          gt_activity         TYPE TABLE OF zce_ps_cats_activity,
+          gt_pm               TYPE TABLE OF zce_ps_cats_project_manager.
+ENDCLASS.
+
+
+
+CLASS ZCL_PS_CATS_ASSIGNMENT_WEEK IMPLEMENTATION.
+
+
+  METHOD build_empty_assignment_week.
+    DATA: ls_assignment_week LIKE LINE OF gt_assignment_weeks,
+          ls_assignment_day  TYPE zce_ps_cats_assignment_day.
+
+    ls_assignment_week-isabsence = iv_is_absence.
+    ls_assignment_week-isschcorrection = iv_is_sch_correction.
+
+    ls_assignment_week-employeenumber = iv_employeenumber.
+    ls_assignment_week-startdate = iv_startdate.
+
+    ls_assignment_week-projectkey = iv_project.
+    ls_assignment_week-wbskey = iv_wbs.
+    ls_assignment_week-typekey = iv_type.
+    ls_assignment_week-activitykey = iv_activity.
+    ls_assignment_week-network = iv_network.
+
+    ls_assignment_week-monday = iv_startdate.
+    ls_assignment_week-tuesday = iv_startdate + 1.
+    ls_assignment_week-wednesday = iv_startdate + 2.
+    ls_assignment_week-thursday = iv_startdate + 3.
+    ls_assignment_week-friday = iv_startdate + 4.
+    ls_assignment_week-saturday = iv_startdate + 5.
+    ls_assignment_week-sunday = iv_startdate + 6.
+    APPEND ls_assignment_week TO gt_assignment_weeks.
+
+    MOVE-CORRESPONDING ls_assignment_week TO ls_assignment_day.
+    ls_assignment_day-WeekStartDate = iv_startdate.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 1.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 2.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 3.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 4.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 5.
+    APPEND ls_assignment_day TO gt_assignment_days.
+    ls_assignment_day-WeekStartDate = iv_startdate + 6.
+    APPEND ls_assignment_day TO gt_assignment_days.
+
+  ENDMETHOD.
+
+
+  METHOD check_instance_count.
+    rv_count = gv_count.
+    gv_count = gv_count + 1.
+  ENDMETHOD.
+
+
+  METHOD get_assignments_for_week.
+    gv_count = gv_count + 1.
+
+    DATA: lv_startdate            TYPE zce_ps_cats_assignment_week-startdate,
+          lv_project              TYPE zce_ps_cats_assignment_week-projectkey,
+          lv_wbs                  TYPE zce_ps_cats_assignment_week-wbskey,
+          lv_type                 TYPE zce_ps_cats_assignment_week-typekey,
+          lv_activity             TYPE zce_ps_cats_assignment_week-activitykey,
+          lv_network              TYPE zce_ps_cats_assignment_week-network,
+          lv_absatttype           TYPE zce_ps_cats_assignment_week-absatttype,
+          lv_employeenumber       TYPE zxa_employee_number,
+          lv_get_worklist         TYPE abap_boolean,
+          lv_filter_emp_number    TYPE abap_boolean,
+          lv_get_blank_absence    TYPE abap_boolean,
+          lv_get_blank_correction TYPE abap_boolean.
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+        ENDIF.
+
+        " If there is more than one filter then this is a nav from assignment day, and we already have the weeks
+        IF lines(  lt_filter ) GT 1 AND gt_assignment_weeks IS NOT INITIAL.
+          et_assignment_weeks = gt_assignment_weeks.
+          RETURN.
+        ELSE.
+
+          "Read filters
+          LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+            LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+              IF <fs_single_select>-range IS NOT INITIAL.
+                CASE <fs_single_select>-name.
+                  WHEN 'STARTDATE' OR 'WEEKSTARTDATE'.
+                    lv_StartDate = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'EMPLOYEENUMBER'.
+                    lv_employeenumber = <fs_single_select>-range[ 1 ]-low.
+                    lv_filter_emp_number = abap_true.
+                  WHEN 'PROJECTKEY'.
+                    lv_project = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'WBSKEY'.
+                    lv_wbs = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ACTIVITYKEY'.
+                    lv_activity = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'TYPEKEY'.
+                    lv_type = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ISWORKLIST'.
+                    lv_get_worklist = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'NETWORK'.
+                    lv_network = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ABSATTTYPE'.
+                    lv_absatttype = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ISABSENCE'.
+                    lv_get_blank_absence = <fs_single_select>-range[ 1 ]-low.
+                  WHEN 'ISSCHCORRECTION'.
+                    lv_get_blank_correction = <fs_single_select>-range[ 1 ]-low.
+                ENDCASE.
+              ENDIF.
+            ENDLOOP.
+          ENDLOOP.
+
+          IF lv_startdate IS INITIAL.
+            RETURN.
+          ENDIF.
+
+          IF io_request->is_data_requested( ).
+
+*          If worklist requested, do this
+            IF lv_get_worklist EQ abap_true.
+              me->load_worklist_for_week( iv_destination_new = lv_destination_new iv_startdate = lv_startdate iv_employeenumber = lv_employeenumber ).
+
+*            Store the count
+              ev_count = lines( gt_assignment_weeks ).
+
+*        If we are requesting a blank absence
+            ELSEIF lv_get_blank_absence EQ abap_true AND lines( lt_filter[ 1 ]-single_select ) EQ 3.
+              me->build_empty_assignment_week(
+                  EXPORTING
+                    iv_startdate        = lv_startdate
+                    iv_employeenumber   = lv_employeenumber
+                    iv_is_absence        = abap_true
+              ).
+
+*        If we are requesting a blank work schedule correction
+            ELSEIF lv_get_blank_correction EQ abap_true AND lines( lt_filter[ 1 ]-single_select ) EQ 3.
+              me->build_empty_assignment_week(
+                  EXPORTING
+                    iv_startdate        = lv_startdate
+                    iv_employeenumber   = lv_employeenumber
+                    iv_is_sch_correction = abap_true
+              ).
+
+*          Read with key fields
+            ELSEIF lv_project IS NOT INITIAL AND lv_wbs IS NOT INITIAL AND lv_activity IS NOT INITIAL AND lv_type IS NOT INITIAL
+              AND lv_network IS NOT INITIAL AND lv_StartDate IS NOT INITIAL AND lv_filter_emp_number EQ abap_true.
+
+              me->build_empty_assignment_week(
+                  EXPORTING
+                    iv_startdate        = lv_startdate
+                    iv_project          = lv_project
+                    iv_wbs              = lv_wbs
+                    iv_type             = lv_type
+                    iv_activity         = lv_activity
+                    iv_network          = lv_network
+                    iv_employeenumber   = lv_employeenumber
+              ).
+
+*          If not worklist requested, load week data
+            ELSE.
+              me->load_data_for_week( iv_destination_new = lv_destination_new iv_startdate = lv_startdate iv_employeenumber = lv_employeenumber ).
+
+            ENDIF.
+
+            et_assignment_weeks = gt_assignment_weeks.
+
+            IF lv_project IS NOT INITIAL AND lv_wbs IS NOT INITIAL AND lv_activity IS NOT INITIAL
+                AND lv_type IS NOT INITIAL.
+              DELETE et_assignment_weeks WHERE NOT ( projectkey EQ lv_project
+                  AND wbskey EQ lv_wbs
+                  AND activitykey EQ lv_activity
+                  AND typekey EQ lv_type ).
+
+            ENDIF.
+
+          ENDIF.
+        ENDIF.
+
+*        Top and Skip
+        IF lines( et_assignment_weeks ) GT 0.
+          DATA(lv_topskip) = ls_pagination-skip + ls_pagination-top + 1.
+          DELETE et_assignment_weeks FROM lv_topskip TO lines( et_assignment_weeks ).
+          IF ls_pagination-skip GT 0.
+            DELETE et_assignment_weeks FROM 1 TO ls_pagination-skip.
+          ENDIF.
+        ENDIF.
+
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_corresponding_tables.
+    gv_count = gv_count + 1.
+
+    et_assignment_days    = gt_assignment_days.
+    et_assignment         = gt_assignment.
+*    et_project            = gt_project.
+    et_wbs                = gt_wbs.
+    et_activity           = gt_activity.
+    et_assignment_weeks   = gt_assignment_weeks.
+    et_pm                 = gt_pm.
+  ENDMETHOD.
+
+
+  METHOD get_instance.
+
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+
+
+  ENDMETHOD.
+
+
+  METHOD load_data_for_week.
+* Load CATS records for the week
+
+*         Call shared method to get ALL stuff in one bite, and save it here
+    CALL FUNCTION 'Z_BE_PS_CATS_GET_TIMESHEET' DESTINATION iv_destination_new
+      EXPORTING
+        iv_startdate          = iv_startdate
+        iv_employeenumber     = iv_employeenumber
+      IMPORTING
+        et_assignment_weeks   = gt_assignment_weeks
+        et_assignment_days    = gt_assignment_days
+        et_assignments        = gt_assignment
+*       et_project            = gt_project
+        et_wbs                = gt_wbs
+        et_activity           = gt_activity
+        et_pm                 = gt_pm
+      EXCEPTIONS
+        system_failure        = 1
+        communication_failure = 2
+        OTHERS                = 99.
+
+    CASE sy-subrc.
+      WHEN 0.
+*                Handle this above
+      WHEN 1.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_TIMESHEET'.
+      WHEN 2.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_TIMESHEET'.
+      WHEN 99.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_TIMESHEET'.
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+  METHOD load_worklist_for_week.
+*  Load worklist
+*         Call shared method to get ALL stuff in one bite, and save it here
+    CALL FUNCTION 'Z_BE_PS_CATS_GET_WORKLIST' DESTINATION iv_destination_new
+      EXPORTING
+        iv_startdate          = iv_startdate
+        iv_employeenumber     = iv_employeenumber
+      IMPORTING
+        et_assignment_weeks   = gt_assignment_weeks
+        et_assignment_days    = gt_assignment_days
+        et_assignments        = gt_assignment
+*       et_project            = gt_project
+        et_wbs                = gt_wbs
+        et_activity           = gt_activity
+        et_pm                 = gt_pm
+      EXCEPTIONS
+        system_failure        = 1
+        communication_failure = 2
+        OTHERS                = 99.
+
+    CASE sy-subrc.
+      WHEN 0.
+*                Handle this above
+      WHEN 1.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_WORKLIST'.
+      WHEN 2.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_WORKLIST'.
+      WHEN 99.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+            rfc_name = 'Z_BE_PS_CATS_GET_WORKLIST'.
+    ENDCASE.
+
+  ENDMETHOD.
+
+
+  METHOD set_assignment_search_results.
+    APPEND LINES OF it_assignment TO gt_assignment.
+    APPEND LINES OF it_wbs TO gt_wbs.
+    APPEND LINES OF it_activity TO gt_activity.
+    APPEND LINES OF it_pm TO gt_pm.
+  ENDMETHOD.
+ENDCLASS.

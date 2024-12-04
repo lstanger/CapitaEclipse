@@ -1,0 +1,52 @@
+@EndUserText.label: 'Weeks'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_WEEK'
+
+@OData.entitySet.name: 'Weeks'
+@OData.entityType.name: 'Week'
+
+@UI.headerInfo: {
+  typeName: 'Week',
+  typeNamePlural: 'Weeks',
+  title: {
+    type: #STANDARD, value: 'StartDate'
+  }
+}
+
+//define custom entity ZCE_PS_CATS_WEEK
+define root custom entity ZCE_PS_CATS_WEEK
+{
+  key StartDate        : sydate;
+  key EmployeeNumber   : zxa_employee_number;
+      Recorded         : abap.char(20);
+      Target           : abap.char(20);
+      RecTarget        : abap.char(20);
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _DayColumns      : association [1..*] to ZCE_PS_CATS_DAY on  _DayColumns.WeekStartDate  = $projection.StartDate
+                                                               and _DayColumns.EmployeeNumber = $projection.EmployeeNumber;
+
+      //  _AssignmentWeeks : association [1..*] to ZCE_PS_CATS_ASSIGNMENT_WEEK on _AssignmentWeeks.StartDate = $projection.StartDate
+      //                                                             and _AssignmentWeeks.EmployeeNumber = $projection.EmployeeNumber;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Absences        : association [0..*] to ZCE_PS_CATS_ABSENCE on  _Absences.StartDate      = $projection.StartDate
+                                                                   and _Absences.EmployeeNumber = $projection.EmployeeNumber;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Days            : association [1..*] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Days.WeekStartDate  = $projection.StartDate
+                                                                          and _Days.EmployeeNumber = $projection.EmployeeNumber;
+
+      //_AssignmentWeeksComp           : composition [0..*] of ZCE_PS_CATS_ASSIGNMENT_WEEK;
+      //_AssignmentDaysComp           : composition [0..*] of ZCE_PS_CATS_ASSIGNMENT_DAY;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _AssignmentWeeks : composition [0..*] of ZCE_PS_CATS_ASSIGNMENT_WEEK;
+
+}

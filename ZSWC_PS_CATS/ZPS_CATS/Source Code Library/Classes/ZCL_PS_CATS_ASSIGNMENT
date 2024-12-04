@@ -1,0 +1,349 @@
+CLASS zcl_ps_cats_assignment DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES: ts_assignment   TYPE ZCE_PS_CATS_assignment,
+           tt_assignments  TYPE TABLE OF zce_ps_cats_assignment,
+           tr_projectkey   TYPE RANGE OF zce_ps_cats_assignment-projectkey,
+           tr_projectdesc  TYPE RANGE OF zce_ps_cats_assignment-ProjectShortDescription,
+           tr_projectdef   TYPE RANGE OF zce_ps_cats_assignment-ProjectDefinition,
+           tr_wbskey       TYPE RANGE OF zce_ps_cats_assignment-wbskey,
+           tr_prfit_centre TYPE RANGE OF zce_ps_cats_assignment-ProfitCentreKey,
+           tr_cost_centre  TYPE RANGE OF zce_ps_cats_assignment-CostCentreKey,
+           tr_company_code TYPE RANGE OF zce_ps_cats_assignment-CompanyCodeKey,
+           tr_pm           TYPE RANGE OF zce_ps_cats_assignment-PMPersonnelNumber.
+
+    CLASS-METHODS get_instance
+      RETURNING VALUE(ro_instance) TYPE REF TO zcl_ps_cats_assignment.
+
+    METHODS:
+      get_assignments
+        IMPORTING
+          io_request     TYPE REF TO if_rap_query_request OPTIONAL
+        EXPORTING
+          et_assignments TYPE tt_assignments
+          ev_count       TYPE i
+        RAISING
+          cx_rap_query_provider,
+
+      read_assignment
+        IMPORTING
+          iv_projectkey  TYPE zce_ps_cats_assignment-projectkey
+          iv_wbskey      TYPE zce_ps_cats_assignment-wbskey
+          iv_activitykey TYPE zce_ps_cats_assignment-activitykey
+          iv_destination TYPE rfcdest
+        EXPORTING
+          et_assignments TYPE tt_assignments
+        RAISING
+          cx_rap_query_provider,
+
+      search_assignments
+        IMPORTING
+          iv_top          TYPE i
+          iv_skip         TYPE i
+          ir_projectkey   TYPE tr_projectkey
+          ir_projectdesc  TYPE tr_projectdesc
+          ir_projectdef   TYPE tr_projectdef
+          ir_prfit_centre TYPE tr_prfit_centre
+          ir_cost_centre  TYPE tr_cost_centre
+          ir_company_code TYPE tr_company_code
+          ir_pm           TYPE tr_pm
+          ir_wbs          TYPE tr_wbskey
+          iv_destination  TYPE rfcdest
+        EXPORTING
+          et_assignments  TYPE tt_assignments
+          ev_count        TYPE i
+        RAISING
+          cx_rap_query_provider.
+
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance TYPE REF TO zcl_ps_cats_assignment.
+ENDCLASS.
+
+
+
+CLASS ZCL_PS_CATS_ASSIGNMENT IMPLEMENTATION.
+
+
+  METHOD get_assignments.
+
+    DATA: lv_projectkey  TYPE zce_ps_cats_assignment-projectkey,
+          lv_wbskey      TYPE zce_ps_cats_assignment-wbskey,
+          lv_activitykey TYPE zce_ps_cats_assignment-activitykey,
+          lt_assignments TYPE tt_assignments.
+
+    DATA: lr_projectkey   TYPE tr_projectkey,
+          lr_projectdesc  TYPE tr_projectdesc,
+          lr_projectdef   TYPE tr_projectdef,
+          lr_wbskey       TYPE tr_wbskey,
+          lr_prfit_centre TYPE tr_prfit_centre,
+          lr_cost_centre  TYPE tr_cost_centre,
+          lr_company_code TYPE tr_company_code,
+          lr_pm           TYPE tr_pm.
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+        ENDIF.
+
+        "Read filters (for single read or search)
+        LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+          LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+            IF <fs_single_select>-range IS NOT INITIAL.
+              CASE <fs_single_select>-name.
+                WHEN 'PROJECTKEY'.
+                  IF lines( <fs_single_select>-range ) = 1.
+                    lv_projectkey = <fs_single_select>-range[ 1 ]-low.
+                  ENDIF.
+                  lr_projectkey = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                         ( sign = <fs_range>-sign
+                         option = <fs_range>-option
+                         low = CONV #( <fs_range>-low )
+                         high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'PROJECTDEFINITION'.
+                  lr_projectdef = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                         ( sign = <fs_range>-sign
+                         option = <fs_range>-option
+                         low = CONV #( <fs_range>-low )
+                         high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'WBSKEY'.
+                  IF lines( <fs_single_select>-range ) = 1.
+                    lv_wbskey = <fs_single_select>-range[ 1 ]-low.
+                  ENDIF.
+                  lr_wbskey = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                         ( sign = <fs_range>-sign
+                         option = <fs_range>-option
+                         low = CONV #( <fs_range>-low )
+                         high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'ACTIVITYKEY'.
+                  lv_activitykey = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'PROFITCENTREKEY'.
+                  lr_prfit_centre = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                           ( sign = <fs_range>-sign
+                           option = <fs_range>-option
+                           low = CONV #( <fs_range>-low )
+                           high = CONV #( <fs_range>-high ) ) ).
+
+                WHEN 'PROJECTSHORTDESCRIPTION'.
+                  lr_projectdesc = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                           ( sign = <fs_range>-sign
+                           option = <fs_range>-option
+                           low = CONV #( <fs_range>-low )
+                           high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'PMPERSONNELNUMBER'.
+                  lr_pm = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                           ( sign = <fs_range>-sign
+                           option = <fs_range>-option
+                           low = CONV #( <fs_range>-low )
+                           high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'COMPANYCODEKEY'.
+                  lr_company_code = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                           ( sign = <fs_range>-sign
+                           option = <fs_range>-option
+                           low = CONV #( <fs_range>-low )
+                           high = CONV #( <fs_range>-high ) ) ).
+                WHEN 'COSTCENTREKEY'.
+                  lr_cost_centre = VALUE #( FOR <fs_range> IN <fs_single_select>-range
+                           ( sign = <fs_range>-sign
+                           option = <fs_range>-option
+                           low = CONV #( <fs_range>-low )
+                           high = CONV #( <fs_range>-high ) ) ).
+              ENDCASE.
+            ENDIF.
+          ENDLOOP.
+
+          IF io_request->is_data_requested( ).
+            CLEAR: lt_assignments.
+
+            IF lv_projectkey IS NOT INITIAL AND lv_wbskey IS NOT INITIAL AND lv_activitykey IS NOT INITIAL.
+
+*            READ assignment
+              CLEAR: lt_assignments.
+              me->read_assignment(
+                EXPORTING
+                  iv_projectkey = lv_projectkey
+                  iv_wbskey = lv_wbskey
+                  iv_activitykey = lv_activitykey
+                  iv_destination = lv_destination_new
+                IMPORTING
+                  et_assignments = lt_assignments ).
+              APPEND LINES OF lt_assignments TO et_assignments.
+              IF lt_assignments IS NOT INITIAL. "If we have something, leave method, otherwise do a search
+                CONTINUE.
+              ENDIF.
+            ENDIF.
+
+*          SEARCH
+            me->search_assignments(
+              EXPORTING
+                iv_top          = ls_pagination-top
+                iv_skip         = ls_pagination-skip
+                ir_projectkey   = lr_projectkey
+                ir_projectdesc  = lr_projectdesc
+                ir_projectdef   = lr_projectdef
+                ir_prfit_centre = lr_prfit_centre
+                ir_cost_centre  = lr_cost_centre
+                ir_company_code = lr_company_code
+                ir_pm           = lr_pm
+                ir_wbs          = lr_wbskey
+                iv_destination = lv_destination_new
+              IMPORTING
+                et_assignments = lt_assignments
+                ev_count       = ev_count ).
+            IF lv_activitykey IS NOT INITIAL.
+              DELETE lt_assignments WHERE activitykey NE lv_activitykey.
+            ENDIF.
+
+            APPEND LINES OF lt_assignments TO et_assignments.
+
+*            ENDIF.
+
+          ENDIF.
+        ENDLOOP.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_instance.
+
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+
+
+  ENDMETHOD.
+
+
+  METHOD read_assignment.
+*    Check if data already loaded:
+    zcl_ps_cats_assignment_week=>get_instance( )->get_corresponding_tables(
+      IMPORTING
+        et_assignment = et_assignments
+    ).
+    IF et_assignments IS NOT INITIAL.
+      DELETE et_assignments WHERE
+         NOT ( projectkey EQ iv_projectkey
+         AND wbskey EQ iv_wbskey
+         AND activitykey EQ iv_activitykey ).
+      IF lines( et_assignments ) GE 1.
+        RETURN.
+      ENDIF.
+    ENDIF.
+
+
+*    CALL FUNCTION 'Z_BE_PS_CATS_GET_ASSIGNMENTS' DESTINATION iv_destination
+*      EXPORTING
+*        iv_projectkey         = iv_projectkey
+*        iv_wbskey             = iv_wbskey
+*        iv_activitykey        = iv_activitykey
+*      IMPORTING
+*        et_assignments        = et_assignments
+*      EXCEPTIONS
+*        system_failure        = 1
+*        communication_failure = 2
+*        OTHERS                = 99.
+*
+*    CASE sy-subrc.
+*      WHEN 0.
+**                    Do nothing, all good
+*      WHEN 1.
+*        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*          EXPORTING
+*            textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+*            rfc_name = 'Z_BE_PS_CATS_GET_ASSIGNMENTS'.
+*      WHEN 2.
+*        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*          EXPORTING
+*            textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+*            rfc_name = 'Z_BE_PS_CATS_GET_ASSIGNMENTS'.
+*      WHEN 99.
+*        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+*          EXPORTING
+*            textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+*            rfc_name = 'Z_BE_PS_CATS_GET_ASSIGNMENTS'.
+*    ENDCASE.
+
+  ENDMETHOD.
+
+
+  METHOD search_assignments.
+    DATA:
+      lt_wbs      TYPE TABLE OF zce_xa_wbs_elements,
+      lt_activity TYPE TABLE OF zce_ps_cats_activity,
+      lt_pm       TYPE TABLE OF zce_ps_cats_project_manager.
+
+    CALL FUNCTION 'Z_BE_PS_CATS_SEARCH_ASSIGNMENT' DESTINATION iv_destination
+      EXPORTING
+        iv_top                = iv_top
+        iv_skip               = iv_skip
+        ir_project            = ir_projectkey
+        ir_projectdesc        = ir_projectdesc
+        ir_projectdef         = ir_projectdef
+        ir_profitcentre       = ir_prfit_centre
+        ir_costcentre         = ir_cost_centre
+        ir_companycode        = ir_company_code
+        ir_pm                 = ir_pm
+        ir_wbskey             = ir_wbs
+      IMPORTING
+        et_assignments        = et_assignments
+        et_wbs                = lt_wbs
+        et_activity           = lt_activity
+        et_pm                 = lt_pm
+        ev_count              = ev_count
+      EXCEPTIONS
+        system_failure        = 1
+        communication_failure = 2
+        OTHERS                = 99.
+
+    CASE sy-subrc.
+      WHEN 0.
+
+*        Save results globally
+        zcl_ps_cats_assignment_week=>get_instance( )->set_assignment_search_results(
+            it_assignment = et_assignments
+            it_wbs = lt_wbs
+            it_activity = lt_activity
+            it_pm = lt_pm ).
+      WHEN 1.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+            rfc_name = 'Z_BE_PS_CATS_SEARCH_ASSIGNMENT'.
+      WHEN 2.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+            rfc_name = 'Z_BE_PS_CATS_SEARCH_ASSIGNMENT'.
+      WHEN 99.
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+            rfc_name = 'Z_BE_PS_CATS_SEARCH_ASSIGNMENT'.
+    ENDCASE.
+  ENDMETHOD.
+ENDCLASS.

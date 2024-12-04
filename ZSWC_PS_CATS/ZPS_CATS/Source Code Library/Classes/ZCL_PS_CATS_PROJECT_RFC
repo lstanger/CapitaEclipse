@@ -1,0 +1,69 @@
+CLASS zcl_ps_cats_project_rfc DEFINITION
+  PUBLIC
+  INHERITING FROM zcl_xa_rfc
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES: ts_project  TYPE zce_ps_cats_project,
+           tt_projects TYPE TABLE OF zce_ps_cats_project.
+
+    METHODS: CONSTRUCTOR RAISING cx_rfc_dest_provider_error,
+             GET_PROJECT IMPORTING iv_project TYPE prctr
+                               RETURNING VALUE(rs_ce_project) TYPE zce_ps_cats_project
+                               RAISING   cx_rap_query_prov_not_impl
+                                         cx_rap_query_provider.
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_PS_CATS_PROJECT_RFC IMPLEMENTATION.
+
+
+  METHOD constructor.
+
+    super->constructor( ).
+
+    DATA: lr_rfc_data           TYPE REF TO data.
+    CREATE DATA: lr_rfc_data TYPE TABLE OF ZPS_CATS_PROJECT_BAPI_S.
+
+    zif_xa_rfc~gv_destination_rfc_name = 'Z_BE_PS_CATS_GET_PROJECT'. "RFC FM Name in ECC
+    zif_xa_rfc~gv_rfc_structure_name = 'ZPS_CATS_PROJECT_BAPI_S'. " RFC Structure
+    zif_xa_rfc~gv_custom_entity_name = 'ZCE_PS_CATS_PROJECT'. " Custom Entity
+
+  ENDMETHOD.
+
+
+  METHOD get_project.
+
+    DATA: lt_filter TYPE zxa_sys_selopt_rng_t,
+          lt_data   LIKE STANDARD TABLE OF rs_ce_project.
+
+    FIELD-SYMBOLS: <fs_rfc_data>           TYPE STANDARD TABLE,
+                   <fs_custom_entity_data> TYPE STANDARD TABLE.
+
+    CHECK iv_project IS NOT INITIAL.
+
+    TRY.
+
+        lt_filter = VALUE #( BASE lt_filter ( name = 'PROJECTDEFINITION' range = VALUE #( ( sign = 'I' option = 'EQ' low = iv_project ) ) ) ).
+        DATA(lt_bapi_filter) = VALUE zxa_sys_selopt_t( ( single_select = lt_filter ) ).
+
+
+        me->zif_xa_rfc~select_direct( EXPORTING it_filters = lt_bapi_filter
+                                      IMPORTING et_data = lt_data ).
+
+        IF lt_data IS NOT INITIAL.
+           READ TABLE lt_data INTO rs_ce_project INDEX 1.
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+    ENDTRY.
+
+
+   ENDMETHOD.
+ENDCLASS.

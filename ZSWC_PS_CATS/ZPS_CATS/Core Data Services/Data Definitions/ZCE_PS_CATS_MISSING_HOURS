@@ -1,0 +1,32 @@
+@EndUserText.label: 'Get Missing Hours'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_MISSING_HOURS'
+@Search.searchable: true
+
+@OData.entitySet.name: 'MissingHour'
+@OData.entityType.name: 'MissingHours'
+
+@UI.headerInfo: {
+  typeName: 'MissingHour',
+  typeNamePlural: 'MissingHours'
+//  title: {
+//    type: #STANDARD, value: ''
+//  }
+}
+
+define custom entity ZCE_PS_CATS_MISSING_HOURS
+{
+  @Search.defaultSearchElement: true
+  key EmployeeNumber : zxa_employee_number;
+      MissingHours :  abap.char( 6);
+      Icon         :  abap.char(40);
+      NumberDigits : abap.char(40);
+      NumberFactor : abap.char(40);
+      NumberState  : abap.char(40);
+      NumberUnit   : abap.char(40);
+      Subtitle     : abap.char(40);
+      Title        : abap.char(40);
+      Info         : abap.char(40);//
+      InfoState    : abap.char(40);
+      StateArrow   : abap.char(40);
+      TargetParams : abap.char(40);
+}

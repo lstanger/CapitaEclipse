@@ -1,0 +1,42 @@
+CLASS zcl_ce_ps_cats_assignment_week DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance     TYPE REF TO zcl_ps_cats_assignment_week.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_ASSIGNMENT_WEEK IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    DATA(lo_assignment_util) = zcl_ps_cats_assignment_week=>get_instance( ).
+
+    lo_assignment_util->get_assignments_for_week( EXPORTING io_request = io_request
+                                              IMPORTING et_assignment_weeks = DATA(lt_assignment_weeks)
+                                                ev_count = DATA(lv_count) ).
+
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_assignment_weeks ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+
+*    Get count, if there is one
+      IF lv_count IS NOT INITIAL.
+        io_response->set_total_number_of_records( CONV #( lv_count ) ).
+      ELSE.
+        io_response->set_total_number_of_records( lines( lt_assignment_weeks ) ).
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

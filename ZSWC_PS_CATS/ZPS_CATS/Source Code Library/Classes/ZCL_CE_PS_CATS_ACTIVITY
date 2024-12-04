@@ -1,0 +1,97 @@
+CLASS zcl_ce_ps_cats_activity DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+    TYPES: ts_activity TYPE zce_ps_cats_activity,
+           tt_activity TYPE TABLE OF zce_ps_cats_activity.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_ACTIVITY IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    DATA: lt_activitys     TYPE TABLE OF zce_ps_cats_activity,
+          lt_activity_temp TYPE TABLE OF zce_ps_cats_activity,
+          ls_activity      TYPE zce_ps_cats_activity.
+
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+        ENDIF.
+
+
+        "Read filters
+        LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+          LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+            IF <fs_single_select>-range IS NOT INITIAL.
+              CASE <fs_single_select>-name.
+                WHEN 'ACTIVITY'.
+                  DATA(lr_id_range) = <fs_single_select>-range.
+
+              ENDCASE.
+            ENDIF.
+          ENDLOOP.
+
+
+*           Check if data already loaded:
+          zcl_ps_cats_assignment_week=>get_instance( )->get_corresponding_tables(
+            IMPORTING
+              et_activity = lt_activity_temp
+          ).
+          IF lt_activity_temp IS NOT INITIAL AND lr_id_range IS NOT INITIAL.
+            DELETE lt_activity_temp WHERE
+               activity NOT IN lr_id_range.
+            IF lines( lt_activity_temp ) GE 0.
+              APPEND LINES OF lt_activity_temp TO lt_activitys.
+              CONTINUE.
+            ENDIF.
+          ENDIF.
+
+
+*          ls_activity-activity = '001'.
+*          ls_activity-Text = 'Time'.
+*          APPEND ls_activity TO lt_activitys.
+
+        ENDLOOP.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_activitys ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      io_response->set_total_number_of_records( lines( lt_activitys ) ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

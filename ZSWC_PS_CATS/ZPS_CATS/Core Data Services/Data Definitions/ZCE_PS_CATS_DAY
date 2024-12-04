@@ -1,0 +1,16 @@
+@EndUserText.label: 'Days'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_DAY'
+@Search.searchable: false
+
+@OData.entitySet.name: 'Days'
+@OData.entityType.name: 'Day'
+
+define root custom entity ZCE_PS_CATS_DAY
+{
+  key ZDate : sydate;
+  key EmployeeNumber : zxa_employee_number;
+  WeekStartDate : sydate;
+  Recorded : abap.char(20);
+  Target : abap.char(20);
+  RecTarget : abap.char(20);
+}

@@ -1,0 +1,33 @@
+CLASS zcl_ce_ps_cats_assignment_day DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_ASSIGNMENT_DAY IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    data(lo_assignment_util) = zcl_ps_cats_assignment_day=>get_instance( ).
+
+    lo_assignment_util->get_assignment_days( exporting io_request = io_request
+                                              importing et_assignment_days = data(lt_assignment_days) ).
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_assignment_days ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      io_response->set_total_number_of_records( lines( lt_assignment_days ) ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

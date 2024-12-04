@@ -1,0 +1,23 @@
+@EndUserText.label: 'Custom Entity for Entry Acivity'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_ACTIVITY'
+@Search.searchable: true
+
+@OData.entitySet.name: 'Activities'
+@OData.entityType.name: 'Activity'
+
+@UI.headerInfo: {
+  typeName: 'Activity',
+  typeNamePlural: 'Activities',
+  title: {
+    type: #STANDARD, value: 'ActivityDescription'
+  }
+}
+
+
+define custom entity ZCE_PS_CATS_ACTIVITY
+{
+  key Activity            : zps_vornr; //abap.char(4);
+
+      @Search.defaultSearchElement: true
+      ActivityDescription : zps_ltxa1; //abap.char(40);
+}

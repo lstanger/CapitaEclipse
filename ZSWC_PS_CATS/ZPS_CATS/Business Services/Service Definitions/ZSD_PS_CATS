@@ -1,0 +1,21 @@
+@EndUserText.label: 'CATS Service Definition'
+define service ZSD_PS_CATS {
+  expose ZCE_PS_CATS_WEEK               as Weeks;
+  expose ZCE_PS_CATS_Assignment         as Assignments;
+  expose ZCE_PS_CATS_DAY                as Days;
+  expose ZCE_PS_CATS_ASSIGNMENT_DAY     as AssignmentDays;
+  expose ZCE_PS_CATS_ASSIGNMENT_WEEK    as AssignmentWeeks;
+  expose ZCE_PS_CATS_PROJECT            as Projects;
+  expose ZCE_PS_CATS_ACTIVITY           as Activities;
+  expose ZCE_PS_CATS_TYPE               as Types;
+  expose ZCE_XA_PROJ_MANAGER            as ProjectManagers;
+  expose ZCE_XA_WBS_ELEMENTS            as WBS;
+  expose ZCE_XA_Profit_Centre           as ProfitCentres;
+  expose ZCE_XA_COST_CENTRE             as CostCentres;
+  expose ZCE_XA_CompanyCode             as CompanyCodes;
+  expose ZCE_PS_CATS_DATA_ENTRY_PROFILE as DataEntryProfiles;
+  expose ZCE_PS_CATS_ABSENCE            as Absences;
+  expose ZCE_PS_CATS_DEFAULTS           as Defaults;
+  expose ZCE_XA_Employee                as Employees;
+  expose ZCE_PS_CATS_MISSING_HOURS      as MissingHours;
+}

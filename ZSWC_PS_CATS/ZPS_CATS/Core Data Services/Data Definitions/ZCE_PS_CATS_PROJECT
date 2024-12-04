@@ -1,0 +1,50 @@
+@EndUserText.label: 'Projects'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_PROJECT'
+@Search.searchable: true
+
+@OData.entitySet.name: 'Projects'
+@OData.entityType.name: 'Project'
+
+@UI.headerInfo: {
+  typeName: 'Project',
+  typeNamePlural: 'Projects',
+  title: {
+    type: #STANDARD, value: 'ProjectShortDescription'
+  }
+}
+
+define custom entity ZCE_PS_CATS_PROJECT
+{
+
+  @UI.facet:[{
+    id: 'ProjectId',
+    purpose: #STANDARD,
+    type: #IDENTIFICATION_REFERENCE,
+    label: 'Information',
+    position: 10
+  }]  
+  
+  @UI : {
+    identification: [{position: 10}],
+    selectionField: [{position: 10}],
+    lineItem: [{position: 10, importance: #HIGH }]
+    
+  } 
+  
+  @Search.defaultSearchElement: true    
+  @ObjectModel.text.element: ['ProjectShortDescription']  
+  key ProjectId             : zps_pspnr;
+  ProjectDefinition         : zps_pspid;
+  
+   @UI : {
+    identification: [{position: 20}],
+    selectionField: [{position: 20}],
+    lineItem: [{position: 20, importance: #HIGH }]
+    
+  } 
+  
+  @Search.defaultSearchElement: true 
+  @EndUserText.label: 'Description' 
+  @Semantics.text: true      
+  ProjectShortDescription   : zps_post1;
+}

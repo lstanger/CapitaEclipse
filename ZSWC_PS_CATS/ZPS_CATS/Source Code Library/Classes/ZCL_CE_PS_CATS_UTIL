@@ -1,0 +1,41 @@
+CLASS zcl_ce_ps_cats_util DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+
+    CLASS-METHODS:
+      handle_bapiret2_return
+        CHANGING
+          ct_return TYPE zxa_bapiret2_t
+        RAISING
+          zxa_sys_rap_provider_exception.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_UTIL IMPLEMENTATION.
+
+
+  METHOD handle_bapiret2_return.
+    DELETE ct_return WHERE type NE 'E'.
+
+    IF lines( ct_return ) GT 0.
+*        Concatenate all errors into one message text
+      DATA: lv_returnstring TYPE string.
+      lv_returnstring = REDUCE string( INIT lv_val TYPE string
+                                       FOR wa_return IN ct_return
+                                       NEXT lv_val = |{ lv_val }| & |{ wa_return-message }|  ).
+
+      RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+        EXPORTING
+          textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+          rfc_name = 'Z_BE_PS_CATS_GET_ABSENCES'.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

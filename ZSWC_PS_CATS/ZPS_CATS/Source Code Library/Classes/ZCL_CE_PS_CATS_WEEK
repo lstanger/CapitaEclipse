@@ -1,0 +1,42 @@
+CLASS zcl_ce_ps_cats_week DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_WEEK IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+
+    DATA: lt_weeks TYPE TABLE OF zce_ps_cats_week.
+
+
+*    Get the day columns, to get the week data
+    data(lo_day_columns_util) = zcl_ps_cats_day_columns=>get_instance( ).
+
+    lo_day_columns_util->get_day_columns( exporting io_request = io_request
+                                              importing es_week = data(ls_week) ).
+
+
+    append ls_week to lt_weeks.
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_weeks ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      io_response->set_total_number_of_records( lines( lt_weeks ) ).
+    ENDIF.
+
+  ENDMETHOD.
+ENDCLASS.

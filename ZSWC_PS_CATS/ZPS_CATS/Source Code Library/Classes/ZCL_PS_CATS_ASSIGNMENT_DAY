@@ -1,0 +1,189 @@
+CLASS zcl_ps_cats_assignment_day DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES: ts_assignment_day  TYPE zce_ps_cats_assignment_day,
+           tt_assignment_days TYPE TABLE OF zce_ps_cats_assignment_day.
+
+    CLASS-METHODS get_instance
+      RETURNING VALUE(ro_instance) TYPE REF TO zcl_ps_cats_assignment_day.
+
+    METHODS:
+      get_assignment_days
+        IMPORTING
+          io_request         TYPE REF TO if_rap_query_request OPTIONAL
+        EXPORTING
+          et_assignment_days TYPE tt_assignment_days
+        RAISING
+          cx_rap_query_provider.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance TYPE REF TO zcl_ps_cats_assignment_day.
+ENDCLASS.
+
+
+
+CLASS ZCL_PS_CATS_ASSIGNMENT_DAY IMPLEMENTATION.
+
+
+  METHOD get_assignment_days.
+
+    DATA: ls_assignment_day   TYPE zce_ps_cats_assignment_day,
+          lt_assignment_weeks TYPE TABLE OF zce_ps_cats_assignment_week,
+          lv_date             LIKE ls_assignment_day-zdate,
+          lv_zdate            LIKE ls_assignment_day-zdate,
+          lv_project          LIKE ls_assignment_day-projectkey,
+          lv_wbs              LIKE ls_assignment_day-wbskey,
+          lv_type             LIKE ls_assignment_day-typekey,
+          lv_activity         LIKE ls_assignment_day-activitykey,
+          lv_employeenumber   LIKE ls_assignment_day-employeenumber,
+          lv_weekstartdate    LIKE ls_assignment_day-weekstartdate,
+          lv_absatttype       LIKE ls_assignment_day-absatttype,
+          lv_weekcounter      LIKE ls_assignment_day-weekcounter,
+          lt_assignment_days  TYPE TABLE OF zce_ps_cats_assignment_day.
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+        ENDIF.
+
+        "Read filters
+        LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+          LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+            IF <fs_single_select>-range IS NOT INITIAL.
+              CASE <fs_single_select>-name.
+                WHEN 'ZDATE'.
+                  lv_zdate = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'PROJECTKEY'.
+                  lv_project = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'WBSKEY'.
+                  lv_wbs = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'ACTIVITYKEY'.
+                  lv_activity = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'TYPEKEY'.
+                  lv_type = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'EMPLOYEENUMBER'.
+                  lv_employeenumber = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'WEEKSTARTDATE'.
+                  lv_weekstartdate = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'ABSATTTYPE'.
+                  lv_absatttype = <fs_single_select>-range[ 1 ]-low.
+                WHEN 'WEEKCOUNTER'.
+                  lv_weekcounter = <fs_single_select>-range[ 1 ]-low.
+              ENDCASE.
+            ENDIF.
+          ENDLOOP.
+
+
+          IF io_request->is_data_requested( ).
+            CLEAR: lt_assignment_days.
+
+            DATA: lv_filter_results TYPE abap_bool VALUE abap_true.
+
+            IF lv_zdate IS INITIAL AND lv_project IS INITIAL AND lv_wbs IS INITIAL AND lv_activity IS INITIAL.
+              lv_filter_results = abap_false.
+            ENDIF.
+
+            DATA(lv_count) = zcl_ps_cats_assignment_week=>get_instance( )->check_instance_count(  ).
+
+            IF ( lv_count EQ 0 ).
+              lv_filter_results = abap_false.
+              zcl_ps_cats_assignment_week=>get_instance( )->get_assignments_for_week(  EXPORTING io_request = io_request ).
+            ENDIF.
+
+
+*            Check if data already loaded (is has to be, as we can't load data here
+            zcl_ps_cats_assignment_week=>get_instance( )->get_corresponding_tables(
+              IMPORTING
+                et_assignment_days = lt_assignment_days
+                et_assignment_weeks = lt_assignment_weeks
+            ).
+            IF ( lv_filter_results EQ abap_true ).
+              IF lt_assignment_days IS NOT INITIAL.
+                DELETE lt_assignment_days WHERE
+                   NOT ( zdate EQ lv_zdate
+                   AND projectkey EQ lv_project
+                   AND wbskey EQ lv_wbs
+                   AND typekey EQ lv_type
+                   AND activitykey EQ lv_activity
+                   AND absatttype EQ lv_absatttype
+                   AND weekcounter EQ lv_weekcounter ).
+                IF lines( lt_assignment_days ) GE 1.
+                  APPEND LINES OF lt_assignment_days TO et_assignment_days.
+                ELSE.
+
+*                Blank record
+                  DELETE lt_assignment_weeks WHERE
+                     NOT ( projectkey EQ lv_project
+                       AND wbskey EQ lv_wbs
+                       AND typekey EQ lv_type
+                       AND activitykey EQ lv_activity
+                       AND absatttype EQ lv_absatttype
+                       AND counter EQ lv_weekcounter )."is this right?
+                  IF lines( lt_assignment_weeks ) GE 1.
+                    MOVE-CORRESPONDING lt_assignment_weeks[ 1 ] TO ls_assignment_day.
+                    CLEAR: ls_assignment_day-entered, ls_assignment_day-counter.
+                    ls_assignment_day-weekcounter = lt_assignment_weeks[ 1 ]-counter.
+                    ls_assignment_day-zdate = lv_zdate.
+                    ls_assignment_day-weekstartdate = lv_weekstartdate.
+                    APPEND ls_assignment_day TO et_assignment_days.
+                  ENDIF.
+
+                ENDIF.
+              ENDIF.
+            ELSE.
+              APPEND LINES OF lt_assignment_days TO et_assignment_days.
+            ENDIF.
+
+**            Data not loaded yet, Muct mean this date has no entry
+*            IF et_assignment_days IS INITIAL.
+*              DATA(lo_assignment_week) = zcl_ps_cats_assignment_week=>get_instance( ).
+*              lo_assignment_week->load_data_for_week( iv_destination_new = lv_destination_new iv_startdate = lv_weekstartdate iv_employeenumber = lv_employeenumber ).
+*              lo_assignment_week->get_corresponding_tables( IMPORTING et_assignment_days = et_assignment_days ).
+*            ENDIF.
+
+          ENDIF.
+        ENDLOOP.
+
+
+        READ TABLE lt_sort INTO DATA(ls_sort) INDEX 1.
+        IF sy-subrc EQ 0.
+          SORT et_assignment_days BY (ls_sort-element_name).
+        ENDIF.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+  ENDMETHOD.
+
+
+  METHOD get_instance.
+
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+
+
+  ENDMETHOD.
+ENDCLASS.

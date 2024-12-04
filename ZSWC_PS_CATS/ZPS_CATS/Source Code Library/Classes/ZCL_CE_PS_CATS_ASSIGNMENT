@@ -1,0 +1,41 @@
+CLASS zcl_ce_ps_cats_assignment DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_ASSIGNMENT IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    DATA: lv_count TYPE i.
+    DATA(lo_assignment_util) = zcl_ps_cats_assignment=>get_instance( ).
+
+    lo_assignment_util->get_assignments( EXPORTING io_request = io_request
+                                              IMPORTING et_assignments = DATA(lt_assignments)
+                                                        ev_count = lv_count ).
+
+
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_assignments ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      IF lv_count IS NOT INITIAL.
+        io_response->set_total_number_of_records( CONV #( lv_count ) ).
+      ELSE.
+        io_response->set_total_number_of_records( lines( lt_assignments ) ).
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

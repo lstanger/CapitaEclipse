@@ -1,0 +1,371 @@
+CLASS lhc_Week DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR Week RESULT result.
+
+    METHODS create FOR MODIFY
+      IMPORTING entities FOR CREATE Week.
+
+    METHODS update FOR MODIFY
+      IMPORTING entities FOR UPDATE Week.
+
+    METHODS delete FOR MODIFY
+      IMPORTING keys FOR DELETE Week.
+
+    METHODS read FOR READ
+      IMPORTING keys FOR READ Week RESULT result.
+
+    METHODS lock FOR LOCK
+      IMPORTING keys FOR LOCK Week.
+
+    METHODS rba_Assignmentweeks FOR READ
+      IMPORTING keys_rba FOR READ Week\_Assignmentweeks FULL result_requested RESULT result LINK association_links.
+
+    METHODS cba_Assignmentweeks FOR MODIFY
+      IMPORTING entities_cba FOR CREATE Week\_Assignmentweeks.
+    METHODS rba_Days FOR READ
+      IMPORTING keys_rba FOR READ Week\_Days FULL result_requested RESULT result LINK association_links.
+
+    METHODS cba_Days FOR MODIFY
+      IMPORTING entities_cba FOR CREATE Week\_Days.
+
+ENDCLASS.
+
+CLASS lhc_Week IMPLEMENTATION.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD create.
+  ENDMETHOD.
+
+  METHOD update.
+  ENDMETHOD.
+
+  METHOD delete.
+  ENDMETHOD.
+
+  METHOD read.
+  ENDMETHOD.
+
+  METHOD lock.
+  ENDMETHOD.
+
+  METHOD rba_Assignmentweeks.
+  ENDMETHOD.
+
+  METHOD cba_Assignmentweeks.
+
+    LOOP AT entities_cba ASSIGNING FIELD-SYMBOL(<fs_day>).
+      DATA(ls_entity) = <fs_day>.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD rba_Days.
+  ENDMETHOD.
+
+  METHOD cba_Days.
+
+    LOOP AT entities_cba ASSIGNING FIELD-SYMBOL(<fs_day>).
+      DATA(ls_entity) = <fs_day>.
+    ENDLOOP.
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS lhc_AssignmentWeek DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS update FOR MODIFY
+      IMPORTING entities FOR UPDATE AssignmentWeek.
+
+    METHODS delete FOR MODIFY
+      IMPORTING keys FOR DELETE AssignmentWeek.
+
+    METHODS read FOR READ
+      IMPORTING keys FOR READ AssignmentWeek RESULT result.
+
+    METHODS rba_Header FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Header FULL result_requested RESULT result LINK association_links.
+
+    METHODS create FOR MODIFY
+      IMPORTING entities FOR CREATE AssignmentWeek.
+    METHODS get_instance_authorizations FOR INSTANCE AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR AssignmentWeek RESULT result.
+
+    METHODS rba_Friday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Friday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Monday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Monday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Saturday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Saturday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Sunday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Sunday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Thursday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Thursday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Tuesday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Tuesday FULL result_requested RESULT result LINK association_links.
+
+    METHODS rba_Wednesday FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Wednesday FULL result_requested RESULT result LINK association_links.
+
+    METHODS cba_Friday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Friday.
+
+    METHODS cba_Monday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Monday.
+
+    METHODS cba_Saturday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Saturday.
+
+    METHODS cba_Sunday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Sunday.
+
+    METHODS cba_Thursday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Thursday.
+
+    METHODS cba_Tuesday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Tuesday.
+
+    METHODS cba_Wednesday FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Wednesday.
+    METHODS rba_Assignmentdays FOR READ
+      IMPORTING keys_rba FOR READ AssignmentWeek\_Assignmentdays FULL result_requested RESULT result LINK association_links.
+
+    METHODS cba_Assignmentdays FOR MODIFY
+      IMPORTING entities_cba FOR CREATE AssignmentWeek\_Assignmentdays.
+
+ENDCLASS.
+
+CLASS lhc_AssignmentWeek IMPLEMENTATION.
+
+  METHOD update.
+  ENDMETHOD.
+
+  METHOD delete.
+  ENDMETHOD.
+
+  METHOD read.
+  ENDMETHOD.
+
+  METHOD rba_Header.
+  ENDMETHOD.
+
+  METHOD create.
+  ENDMETHOD.
+
+  METHOD get_instance_authorizations.
+  ENDMETHOD.
+
+  METHOD rba_Friday.
+  ENDMETHOD.
+
+  METHOD rba_Monday.
+  ENDMETHOD.
+
+  METHOD rba_Saturday.
+  ENDMETHOD.
+
+  METHOD rba_Sunday.
+  ENDMETHOD.
+
+  METHOD rba_Thursday.
+  ENDMETHOD.
+
+  METHOD rba_Tuesday.
+  ENDMETHOD.
+
+  METHOD rba_Wednesday.
+  ENDMETHOD.
+
+  METHOD cba_Friday.
+  ENDMETHOD.
+
+  METHOD cba_Monday.
+  ENDMETHOD.
+
+  METHOD cba_Saturday.
+  ENDMETHOD.
+
+  METHOD cba_Sunday.
+  ENDMETHOD.
+
+  METHOD cba_Thursday.
+  ENDMETHOD.
+
+  METHOD cba_Tuesday.
+  ENDMETHOD.
+
+  METHOD cba_Wednesday.
+  ENDMETHOD.
+
+  METHOD rba_Assignmentdays.
+  ENDMETHOD.
+
+  METHOD cba_Assignmentdays.
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS lhc_AssignmentDay DEFINITION INHERITING FROM cl_abap_behavior_handler.
+  PRIVATE SECTION.
+
+    METHODS create FOR MODIFY
+      IMPORTING entities FOR CREATE AssignmentDay.
+
+    METHODS update FOR MODIFY
+      IMPORTING entities FOR UPDATE AssignmentDay.
+
+    METHODS delete FOR MODIFY
+      IMPORTING keys FOR DELETE AssignmentDay.
+
+    METHODS read FOR READ
+      IMPORTING keys FOR READ AssignmentDay RESULT result.
+
+    METHODS rba_Week FOR READ
+      IMPORTING keys_rba FOR READ AssignmentDay\_Week FULL result_requested RESULT result LINK association_links.
+    METHODS rba_Assignmentweek FOR READ
+      IMPORTING keys_rba FOR READ AssignmentDay\_Assignmentweek FULL result_requested RESULT result LINK association_links.
+
+ENDCLASS.
+
+CLASS lhc_AssignmentDay IMPLEMENTATION.
+
+  METHOD create.
+    "Read the entities and add them to CATSDB
+    DATA: lt_days     TYPE TABLE OF zce_ps_cats_assignment_day,
+          ls_day      TYPE zce_ps_cats_assignment_day,
+          ls_reported LIKE LINE OF reported-AssignmentDay,
+          ls_failed   LIKE LINE OF failed-AssignmentDay.
+
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_day>).
+      CLEAR ls_day.
+      MOVE-CORRESPONDING <fs_day> TO ls_day.
+      APPEND ls_day TO lt_days.
+    ENDLOOP.
+
+    TRY.
+        DATA(lt_return) = zcl_ps_cats=>get_instance( )->update_days( EXPORTING it_days = lt_days  iv_save = abap_false ).
+      CATCH cx_rap_query_provider.
+        LOOP AT entities INTO DATA(entity).
+          MOVE-CORRESPONDING entity TO ls_failed.
+        ENDLOOP.
+    ENDTRY.
+    LOOP AT lt_return INTO DATA(ls_return) WHERE type = 'E'.
+      CLEAR: ls_failed.
+      MOVE-CORRESPONDING entities[ sy-index ] TO ls_failed.
+      APPEND ls_failed TO failed-AssignmentDay.
+      MOVE-CORRESPONDING entities[ sy-index ] TO ls_reported.
+      ls_reported-%msg = new_message_with_text(
+                          severity = if_abap_behv_message=>severity-error
+                          text = ls_return-message
+                      ).
+      APPEND ls_reported TO reported-assignmentday.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD update.
+    "Read the entities and add them to CATSDB
+    DATA: lt_days     TYPE TABLE OF zce_ps_cats_assignment_day,
+          ls_day      TYPE zce_ps_cats_assignment_day,
+          ls_reported LIKE LINE OF reported-AssignmentDay,
+          ls_failed   LIKE LINE OF failed-AssignmentDay.
+    LOOP AT entities ASSIGNING FIELD-SYMBOL(<fs_day>).
+      CLEAR ls_day.
+      MOVE-CORRESPONDING <fs_day> TO ls_day.
+      APPEND ls_day TO lt_days.
+
+*        move-CORRESPONDING <fs_day> to ls_failed.
+*        move-CORRESPONDING <fs_day> to ls_reported.
+*        ls_reported-%msg = new_message_with_text(
+*                            severity = if_abap_behv_message=>severity-error
+*                            text = 'This is an error message, what do I see?'
+*                        ).
+*        append ls_failed to failed-assignmentday.
+*        append ls_reported to reported-assignmentday.
+
+    ENDLOOP.
+
+    TRY.
+        DATA(lt_return) = zcl_ps_cats=>get_instance( )->update_days( EXPORTING it_days = lt_days iv_save = abap_false ).
+      CATCH cx_rap_query_provider.
+        LOOP AT entities INTO DATA(entity).
+          MOVE-CORRESPONDING entity TO ls_failed.
+        ENDLOOP.
+    ENDTRY.
+    LOOP AT lt_return INTO DATA(ls_return) WHERE type = 'E'.
+      IF ls_return-type = 'E'.
+        CLEAR: ls_failed.
+        MOVE-CORRESPONDING entities[ sy-index ] TO ls_failed.
+        APPEND ls_failed TO failed-AssignmentDay.
+        MOVE-CORRESPONDING entities[ sy-index ] TO ls_reported.
+        ls_reported-%msg = new_message_with_text(
+                            severity = if_abap_behv_message=>severity-error
+                            text = ls_return-message
+                        ).
+        APPEND ls_reported TO reported-assignmentday.
+      ENDIF.
+    ENDLOOP.
+  ENDMETHOD.
+
+  METHOD delete.
+  ENDMETHOD.
+
+  METHOD read.
+  ENDMETHOD.
+
+  METHOD rba_Week.
+  ENDMETHOD.
+
+  METHOD rba_Assignmentweek.
+  ENDMETHOD.
+
+ENDCLASS.
+
+CLASS lsc_ZCE_PS_CATS_WEEK DEFINITION INHERITING FROM cl_abap_behavior_saver.
+  PROTECTED SECTION.
+
+    METHODS finalize REDEFINITION.
+
+    METHODS check_before_save REDEFINITION.
+
+    METHODS save REDEFINITION.
+
+    METHODS cleanup REDEFINITION.
+
+    METHODS cleanup_finalize REDEFINITION.
+
+ENDCLASS.
+
+CLASS lsc_ZCE_PS_CATS_WEEK IMPLEMENTATION.
+
+  METHOD finalize.
+  ENDMETHOD.
+
+  METHOD check_before_save.
+  ENDMETHOD.
+
+  METHOD save.
+*  Ideally commit here...
+    TRY.
+        DATA(lt_return) = zcl_ps_cats=>get_instance( )->update_days( EXPORTING iv_save = abap_true ).
+      CATCH zxa_sys_rap_provider_exception cx_rap_query_provider.
+        "do nothing
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD cleanup.
+    zcl_ps_cats=>get_instance( )->initialise(  ).
+  ENDMETHOD.
+
+  METHOD cleanup_finalize.
+    zcl_ps_cats=>get_instance( )->initialise(  ).
+  ENDMETHOD.
+ENDCLASS.

@@ -1,0 +1,154 @@
+CLASS zcl_ce_ps_cats_defaults DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_DEFAULTS IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+    DATA: lv_employee TYPE zxa_employee_number,
+          lt_defaults TYPE TABLE OF zce_ps_cats_defaults,
+          ls_defaults LIKE LINE OF lt_defaults.
+
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        IF io_request IS BOUND.
+          " Map the OData request parameters to the FM importing/table objects
+          lo_instance->map_rap_io_request_params( EXPORTING io_request = io_request
+                                                  IMPORTING es_pagination = DATA(ls_pagination)
+                                                            et_filters = DATA(lt_filter)
+                                                            et_parameters = DATA(lt_parameters)
+                                                            et_requested_elements = DATA(lt_requested_elements)
+                                                            et_sort = DATA(lt_sort)
+                                                            ev_search_expression = DATA(lv_search_expression) ).
+        ENDIF.
+
+
+        "Read filters (for single read or search)
+        LOOP AT lt_filter ASSIGNING FIELD-SYMBOL(<fs_filter>).
+          LOOP AT <fs_filter>-single_select ASSIGNING FIELD-SYMBOL(<fs_single_select>).
+            IF <fs_single_select>-range IS NOT INITIAL.
+              CASE <fs_single_select>-name.
+                WHEN 'EMPLOYEENUMBER'.
+                  lv_employee = <fs_single_select>-range[ 1 ]-low.
+              ENDCASE.
+            ENDIF.
+          ENDLOOP.
+        ENDLOOP.
+
+        DATA: lt_return TYPE zxa_bapiret2_t.
+        CALL FUNCTION 'Z_BE_PS_CATS_GET_DEFAULTS' DESTINATION lv_destination_new
+          EXPORTING
+            iv_employeenumber     = lv_employee
+          IMPORTING
+            es_defaults           = ls_defaults
+            et_return             = lt_return
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+
+        CASE sy-subrc.
+          WHEN 0.
+
+            DELETE lt_return WHERE type NE 'E'.
+
+            IF lines( lt_return ) GT 0.
+*              Concatenate all errors into one message text
+              DATA: lv_returnstring TYPE string.
+              lv_returnstring = REDUCE string( INIT lv_val TYPE string
+                                               FOR wa_return IN lt_return
+                                               NEXT lv_val = |{ lv_val }| & |{ wa_return-message }|  ).
+              ls_defaults-EmployeeNumber = lv_employee.
+              ls_defaults-ErrorMessage = CONV #( lv_returnstring ).
+
+
+            ELSEIF ls_defaults-DisplayName IS INITIAL.
+*                Raise exception!
+              RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+                EXPORTING
+                  textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                  rfc_name = 'Z_BE_PS_CATS_GET_DEFAULTS'.
+            ENDIF.
+
+            ls_defaults-positiondescription = ls_defaults-positiondescription && ' (' && ls_defaults-positionid && ')'.
+
+            DATA(lv_hidecallref) = zcl_xa_user_parameters_helper=>get_instance(  )->get_parameter(
+                zif_xa_user_parameters=>hidecallref ).
+            IF ( lv_hidecallref EQ 'true' ).
+              ls_defaults-HideCallReference = abap_true.
+            ENDIF.
+            DATA(lv_hideaddinfo) = zcl_xa_user_parameters_helper=>get_instance(  )->get_parameter(
+                zif_xa_user_parameters=>hideadditionalinfo ).
+            IF ( lv_hideaddinfo EQ 'true' ).
+              ls_defaults-HideAdditionalInfo = abap_true.
+            ENDIF.
+            DATA(lv_show2decs) = zcl_xa_user_parameters_helper=>get_instance(  )->get_parameter(
+                zif_xa_user_parameters=>timesheetshow2decs ).
+            IF ( lv_show2decs EQ 'true' ).
+              ls_defaults-Show2Decs = abap_true.
+            ENDIF.
+            DATA(lv_show_my_details) = zcl_xa_user_parameters_helper=>get_instance(  )->get_parameter(
+                zif_xa_user_parameters=>ShowMyDetails ).
+            IF ( lv_show_my_details EQ 'true' ).
+              ls_defaults-ShowMyDetails = abap_true.
+            ENDIF.
+
+
+*            SELECT * FROM zxa_user_params
+*                WHERE userid = @sy-uname
+*                and param = 'HideCallReference'
+*                INTO TABLE @DATA(lt_user_params).
+
+*                Handle this above
+            APPEND ls_defaults TO lt_defaults.
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = 'Z_BE_PS_CATS_GET_DEFAULTS'.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = 'Z_BE_PS_CATS_GET_DEFAULTS'.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = 'Z_BE_PS_CATS_GET_DEFAULTS'.
+        ENDCASE.
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_defaults ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      io_response->set_total_number_of_records( lines( lt_defaults ) ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

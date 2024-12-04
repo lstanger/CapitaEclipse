@@ -1,0 +1,21 @@
+@EndUserText.label: 'Absences'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_ABSENCE'
+
+@OData.entitySet.name: 'Absences'
+@OData.entityType.name: 'Absence'
+
+@UI.headerInfo: {
+  typeName: 'Absence',
+  typeNamePlural: 'Absences',
+  title: {
+    type: #STANDARD, value: 'StartDate'
+  }
+}
+define custom entity ZCE_PS_CATS_ABSENCE
+{
+  key StartDate      : sydate;
+  key ZDate          : sydate;
+  key EmployeeNumber : zxa_employee_number;
+  key Subty          : zps_subty; //abap.char(4);
+      Description    : zps_abwtxt; //abap.char(25);
+}

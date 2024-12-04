@@ -1,0 +1,154 @@
+@EndUserText.label: 'Assignment Week'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_ASSIGNMENT_WEEK'
+@Search.searchable: false
+
+@OData.entitySet.name: 'AssignmentWeeks'
+@OData.entityType.name: 'AssignmentWeek'
+
+
+//define root custom entity ZCE_PS_CATS_ASSIGNMENT_WEEK
+define custom entity ZCE_PS_CATS_ASSIGNMENT_WEEK
+{
+  key ProjectKey      : zps_pspnr;
+  key WBSKey          : zxa_wbs_element;
+  key ActivityKey     : zps_vornr;//abap.char(40);
+  key TypeKey         : abap.char(40);
+  key StartDate       : sydate;
+  key EmployeeNumber  : zxa_employee_number;
+  key Network         : znw_aufnr;
+  key AbsAttType      : zps_awart;//abap.char(4);//awart; 9/10/2023
+  key Counter         : zcatscounte;
+  
+      Recorded        : abap.char(40);
+      IsWorklist      : abap_boolean;
+      FlagForDeletion : abap_boolean;
+
+      CallReference   : abap.char(35);
+      AdditionalInfo  : abap.char(50);
+
+      Monday          : sydate;
+      Tuesday         : sydate;
+      Wednesday       : sydate;
+      Thursday        : sydate;
+      Friday          : sydate;
+      Saturday        : sydate;
+      Sunday          : sydate;
+
+      IsAbsence       : abap_boolean;
+      IsSchCorrection    : abap_boolean;
+      
+      WeekChangedOn: abp_lastchange_tstmpl;//5/4/2024
+      
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Assignment     : association [1] to ZCE_PS_CATS_Assignment on  _Assignment.ProjectKey  = $projection.ProjectKey
+                                                                  and _Assignment.WBSKey      = $projection.WBSKey
+                                                                  and _Assignment.ActivityKey = $projection.ActivityKey;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _AssignmentDays           : composition [0..*] of ZCE_PS_CATS_ASSIGNMENT_DAY;
+
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Monday         : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Monday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Monday.WBSKey         = $projection.WBSKey
+                                                                         and _Monday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Monday.TypeKey        = $projection.TypeKey
+                                                                         and _Monday.ZDate          = $projection.Monday
+                                                                         and _Monday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Monday.WeekStartDate  = $projection.StartDate
+                                                                         and _Monday.Network        = $projection.Network
+                                                                         and _Monday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Monday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Tuesday        : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Tuesday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Tuesday.WBSKey         = $projection.WBSKey
+                                                                         and _Tuesday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Tuesday.TypeKey        = $projection.TypeKey
+                                                                         and _Tuesday.ZDate          = $projection.Tuesday
+                                                                         and _Tuesday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Tuesday.WeekStartDate  = $projection.StartDate
+                                                                         and _Tuesday.Network        = $projection.Network
+                                                                         and _Tuesday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Tuesday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Wednesday      : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Wednesday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Wednesday.WBSKey         = $projection.WBSKey
+                                                                         and _Wednesday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Wednesday.TypeKey        = $projection.TypeKey
+                                                                         and _Wednesday.ZDate          = $projection.Wednesday
+                                                                         and _Wednesday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Wednesday.WeekStartDate  = $projection.StartDate
+                                                                         and _Wednesday.Network        = $projection.Network
+                                                                         and _Wednesday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Wednesday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Thursday       : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Thursday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Thursday.WBSKey         = $projection.WBSKey
+                                                                         and _Thursday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Thursday.TypeKey        = $projection.TypeKey
+                                                                         and _Thursday.ZDate          = $projection.Thursday
+                                                                         and _Thursday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Thursday.WeekStartDate  = $projection.StartDate
+                                                                         and _Thursday.Network        = $projection.Network
+                                                                         and _Thursday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Thursday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Friday         : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Friday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Friday.WBSKey         = $projection.WBSKey
+                                                                         and _Friday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Friday.TypeKey        = $projection.TypeKey
+                                                                         and _Friday.ZDate          = $projection.Friday
+                                                                         and _Friday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Friday.WeekStartDate  = $projection.StartDate
+                                                                         and _Friday.Network        = $projection.Network
+                                                                         and _Friday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Friday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Saturday       : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Saturday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Saturday.WBSKey         = $projection.WBSKey
+                                                                         and _Saturday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Saturday.TypeKey        = $projection.TypeKey
+                                                                         and _Saturday.ZDate          = $projection.Saturday
+                                                                         and _Saturday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Saturday.WeekStartDate  = $projection.StartDate
+                                                                         and _Saturday.Network        = $projection.Network
+                                                                         and _Saturday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Saturday.WeekCounter     = $projection.Counter;
+      @ObjectModel.sort.enabled: false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _Sunday         : association [0..1] to ZCE_PS_CATS_ASSIGNMENT_DAY on  _Sunday.ProjectKey     = $projection.ProjectKey
+                                                                         and _Sunday.WBSKey         = $projection.WBSKey
+                                                                         and _Sunday.ActivityKey    = $projection.ActivityKey
+                                                                         and _Sunday.TypeKey        = $projection.TypeKey
+                                                                         and _Sunday.ZDate          = $projection.Sunday
+                                                                         and _Sunday.EmployeeNumber = $projection.EmployeeNumber
+                                                                         and _Sunday.WeekStartDate  = $projection.StartDate
+                                                                         and _Sunday.Network        = $projection.Network
+                                                                         and _Sunday.AbsAttType     = $projection.AbsAttType
+                                                                         and _Sunday.WeekCounter     = $projection.Counter;
+
+      
+                        
+      @ObjectModel.sort.enabled: false 
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true                                    
+      _Header : association to parent ZCE_PS_CATS_WEEK on _Header.EmployeeNumber = $projection.EmployeeNumber
+                                                                 and _Header.StartDate = $projection.StartDate;
+
+}

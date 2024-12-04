@@ -1,0 +1,34 @@
+CLASS zcl_ce_ps_cats_day DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    INTERFACES if_rap_query_provider .
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+ENDCLASS.
+
+
+
+CLASS ZCL_CE_PS_CATS_DAY IMPLEMENTATION.
+
+
+  METHOD if_rap_query_provider~select.
+
+
+    data(lo_day_columns_util) = zcl_ps_cats_day_columns=>get_instance( ).
+
+    lo_day_columns_util->get_day_columns( exporting io_request = io_request
+                                              importing et_days = data(lt_days) ).
+
+    IF io_request->is_data_requested(  ).
+      io_response->set_data( lt_days ).
+    ENDIF.
+
+    IF ( io_request->is_total_numb_of_rec_requested(  ) ).
+      io_response->set_total_number_of_records( lines( lt_days ) ).
+    ENDIF.
+  ENDMETHOD.
+ENDCLASS.

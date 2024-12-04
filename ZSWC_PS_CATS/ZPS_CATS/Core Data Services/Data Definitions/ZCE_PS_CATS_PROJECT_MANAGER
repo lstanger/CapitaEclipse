@@ -1,0 +1,28 @@
+
+//THIS IS OLD AND NOT USED!!!! USE ZXA_GENERAL_PROJ_MANAGER instead
+
+
+
+
+
+@EndUserText.label: 'Custom Entity for Entry Project Manager'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_PROJECT_MANAGER'
+@Search.searchable: true
+
+@OData.entitySet.name: 'ProjectManagers'
+@OData.entityType.name: 'ProjectManager'
+
+@UI.headerInfo: {
+  typeName: 'ProjectManager',
+  typeNamePlural: 'ProjectManagers',
+  title: {
+    type: #STANDARD, value: 'DisplayName'
+  }
+}
+
+define custom entity ZCE_PS_CATS_PROJECT_MANAGER
+{
+  key PersonnelNumber : zxa_employee_number;
+  @Search.defaultSearchElement: true 
+  DisplayName : abap.char(70);
+}

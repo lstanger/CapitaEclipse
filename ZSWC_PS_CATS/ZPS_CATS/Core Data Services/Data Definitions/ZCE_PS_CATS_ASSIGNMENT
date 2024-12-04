@@ -1,0 +1,199 @@
+@EndUserText.label: 'Assignments'
+@ObjectModel.query.implementedBy: 'ABAP:ZCL_CE_PS_CATS_ASSIGNMENT'
+@Search.searchable: true
+
+@OData.entitySet.name: 'Assignments'
+@OData.entityType.name: 'Assignment'
+
+@UI.headerInfo: {
+  typeName: 'Assignment',
+  typeNamePlural: 'Assignments',
+  title: {
+    type: #STANDARD, value: 'ProjectShortDescription'
+  }
+}
+
+define root custom entity ZCE_PS_CATS_Assignment
+{
+
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+  key ProjectKey                : zps_pspnr;
+
+      //      @UI.hidden                : true
+      //      @Search.defaultSearchElement: false
+      //      @ObjectModel.sort.enabled : false
+      //      @ObjectModel.filter.enabled: false
+      //      @Consumption.filter.hidden: true
+      @UI                       : {
+        selectionField          : [{position: 70}],
+        lineItem                : [{position: 70, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Consumption.valueHelpDefinition: [{
+                entity          : {   name: 'ZCE_XA_WBS_ELEMENTS',
+                            element: 'WBSElement' }}]
+      @ObjectModel.foreignKey.association: '_WBS'
+      @Search.defaultSearchElement: true
+  key WBSKey                    : zxa_wbs_element;
+
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+  key ActivityKey               : zps_vornr; //abap.char(4);
+      
+      
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      ActivityDescription : zps_ltxa1; //abap.char(40);
+
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      Network                   : znw_aufnr;
+
+
+      @UI                       : {
+        selectionField          : [{position: 10}],
+        lineItem                : [{position: 10, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Search.defaultSearchElement: true
+      ProjectDefinition         : zps_pspid;
+
+
+      @UI                       : {
+        selectionField          : [{position: 20}],
+        lineItem                : [{position: 20, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @EndUserText.label        : 'Project Description'
+      @Semantics.text           : true
+      @Search.defaultSearchElement: true
+      ProjectShortDescription   : zps_post1;
+
+      //      @UI.hidden                : true
+      //      @Search.defaultSearchElement: false
+      //      @ObjectModel.sort.enabled : false
+      //      @ObjectModel.filter.enabled: false
+      //      @Consumption.filter.hidden: true
+      //      Search                    : abap.char(70);
+
+      // Profit Centre Key
+      @UI                       : {
+        selectionField          : [{position: 30}],
+        lineItem                : [{position: 30, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Consumption.valueHelpDefinition: [{
+                entity          : {   name: 'ZCE_XA_PROFIT_CENTRE',
+                            element: 'ProfitCentre' }}]
+      @ObjectModel.foreignKey.association: '_ProfitCentre'
+      @Search.defaultSearchElement: true
+      ProfitCentreKey           : prctr;
+
+      // Cost Centre Keys
+      @UI                       : {
+        selectionField          : [{position: 60}],
+        lineItem                : [{position: 60, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Consumption.valueHelpDefinition: [{
+                entity          : {   name: 'ZCE_XA_COST_CENTRE', element: 'CostCentre' }
+      }]
+      @ObjectModel.foreignKey.association: '_CostCentre'
+      @Search.defaultSearchElement: true
+      CostCentreKey             : kostl;
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      CostCentreControllingArea : kokrs;
+      @UI.hidden                : true
+      @Search.defaultSearchElement: false
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      CostCentreValidToDate     : abap.dats;
+
+      @UI                       : {
+        selectionField          : [{position: 50}],
+        lineItem                : [{position: 50, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Consumption.valueHelpDefinition: [{
+                entity          : {   name: 'ZCE_XA_AllCompanyCodes',
+                            element: 'CompanyCode' }}]
+      @ObjectModel.foreignKey.association: '_CompanyCode'
+      @Search.defaultSearchElement: true
+      CompanyCodeKey            : bukrs;
+
+      @UI                       : {
+        selectionField          : [{position: 40}],
+        lineItem                : [{position: 40, importance: #HIGH, type: #STANDARD }]
+
+      }
+      @Consumption.valueHelpDefinition: [{
+                entity          : {   name: 'ZCE_XA_PROJ_MANAGER',
+                            element: 'PersonnelNumber' }}]
+      @ObjectModel.foreignKey.association: '_ProjectManager'
+      @Search.defaultSearchElement: true
+      @EndUserText.label        : 'Project Manager'
+      PMPersonnelNumber         : zxa_employee_number;
+
+      @UI.hidden                : true
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _WBS                      : association [0..1] to ZCE_XA_WBS_ELEMENTS on _WBS.WBSElement = $projection.WBSKey;
+
+//      @UI.hidden                : true
+//      @ObjectModel.sort.enabled : false
+//      @ObjectModel.filter.enabled: false
+//      @Consumption.filter.hidden: true
+//      _Activity                 : association [0..1] to ZCE_PS_CATS_ACTIVITY on _Activity.Activity = $projection.ActivityKey;
+
+      @UI.hidden                : true
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _ProfitCentre             : association [0..1] to ZCE_XA_Profit_Centre on _ProfitCentre.ProfitCentre = $projection.ProfitCentreKey;
+
+      @UI.hidden                : true
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _CostCentre               : association [0..1] to ZCE_XA_COST_CENTRE on  _CostCentre.CostCentre      = $projection.CostCentreKey
+                                                                           and _CostCentre.ControllingArea = $projection.CostCentreControllingArea
+                                                                           and _CostCentre.ValidToDate     = $projection.CostCentreValidToDate;
+
+      @UI.hidden                : true
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _CompanyCode              : association [0..1] to ZCE_XA_CompanyCode on _CompanyCode.CompanyCode = $projection.CompanyCodeKey;
+
+      //      @ObjectModel.sort.enabled : false
+      //      @ObjectModel.filter.enabled: false
+      //      @Consumption.filter.hidden: true
+      //      _ProjectManager           : association [0..1] to ZCE_PS_CATS_PROJECT_MANAGER on _ProjectManager.PersonnelNumber = $projection.PMPersonnelNumber;
+
+      @UI.hidden                : true
+      @ObjectModel.sort.enabled : false
+      @ObjectModel.filter.enabled: false
+      @Consumption.filter.hidden: true
+      _ProjectManager           : association [0..1] to ZCE_XA_PROJ_MANAGER on _ProjectManager.PersonnelNumber = $projection.PMPersonnelNumber;
+      //_ProjectManager              : association [0..1] to ZCE_XA_Employee on _ProjectManager.UserID = $projection.PMPersonnelNumber;
+
+}

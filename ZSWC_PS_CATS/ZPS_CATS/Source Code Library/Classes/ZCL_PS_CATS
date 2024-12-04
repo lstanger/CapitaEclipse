@@ -1,0 +1,110 @@
+CLASS zcl_ps_cats DEFINITION
+  PUBLIC
+  FINAL
+  CREATE PUBLIC .
+
+  PUBLIC SECTION.
+
+    TYPES: ts_assignment_day  TYPE zce_ps_cats_assignment_day,
+           tt_assignment_days TYPE TABLE OF zce_ps_cats_assignment_day.
+
+    CLASS-METHODS get_instance      RETURNING VALUE(ro_instance) TYPE REF TO zcl_ps_cats.
+
+    METHODS: initialise.
+
+    METHODS:
+      update_days
+        IMPORTING
+          it_days          TYPE tt_assignment_days OPTIONAL
+          iv_save          TYPE abap_boolean OPTIONAL
+        RETURNING
+          VALUE(rt_return) TYPE zbapiret2_t
+        RAISING
+          cx_rap_query_provider.
+
+  PROTECTED SECTION.
+  PRIVATE SECTION.
+    CLASS-DATA: go_instance TYPE REF TO zcl_ps_cats,
+                gt_days     TYPE tt_assignment_days.
+
+ENDCLASS.
+
+
+
+CLASS ZCL_PS_CATS IMPLEMENTATION.
+
+
+  METHOD get_instance.
+
+    go_instance = COND #( WHEN go_instance IS BOUND THEN go_instance ELSE NEW #( ) ).
+    ro_instance = go_instance.
+
+
+  ENDMETHOD.
+
+
+  METHOD initialise.
+
+*    CLEAR: me->gt_po_buffer. "clear fields
+
+  ENDMETHOD.
+
+
+  METHOD update_days.
+    IF it_days IS NOT INITIAL.
+      APPEND LINES OF it_days TO gt_days.
+    ENDIF.
+
+    DATA(lt_days) = it_days.
+    IF iv_save EQ abap_true.
+      lt_days = gt_days.
+    ENDIF.
+
+*    Format the data ready for processing, into update, delete and create tables
+    TRY.
+        DATA(lo_instance) = zcl_xa_sys_helper=>get_instance(  ).
+
+        " Get the ECC on-premise destination
+        DATA(lv_destination_new)  = lo_instance->get_sap_onpremise_destination(  ).
+
+        CALL FUNCTION 'Z_BE_PS_CATS_UPDATE_DAYS' DESTINATION lv_destination_new
+          EXPORTING
+            it_days               = lt_days
+            iv_commit             = iv_save
+          IMPORTING
+            et_return             = rt_return
+          EXCEPTIONS
+            system_failure        = 1
+            communication_failure = 2
+            OTHERS                = 99.
+
+        CASE sy-subrc.
+          WHEN 0.
+          WHEN 1.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_sytem_failure
+                rfc_name = 'Z_BE_PS_CATS_UPDATE_DAYS'.
+          WHEN 2.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_communication_failure
+                rfc_name = 'Z_BE_PS_CATS_UPDATE_DAYS'.
+          WHEN 99.
+            RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+              EXPORTING
+                textid   = zxa_sys_rap_provider_exception=>rfc_unknown_failure
+                rfc_name = 'Z_BE_PS_CATS_UPDATE_DAYS'.
+        ENDCASE.
+
+
+      CATCH cx_rfc_dest_provider_error INTO DATA(lx_dest).
+
+        RAISE EXCEPTION TYPE zxa_sys_rap_provider_exception
+          EXPORTING
+            textid   = zxa_sys_rap_provider_exception=>destination_provider_error
+            previous = lx_dest.
+
+    ENDTRY.
+  ENDMETHOD.
+ENDCLASS.
